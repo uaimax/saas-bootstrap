@@ -1,0 +1,166 @@
+---
+description: "Regras para documentação automática de aprendizados e soluções em .context/"
+alwaysApply: true
+---
+
+# Documentação Automática de Contexto
+
+## 🎯 Propósito
+
+Esta regra define como a LLM deve **documentar automaticamente** aprendizados, erros e soluções nas pastas `.context/` para evitar repetição de problemas.
+
+## 📁 Estrutura de Contexto
+
+O projeto usa **contexto separado por domínio**:
+
+- **`backend/.context/`** - Aprendizados específicos do backend Django/DRF
+- **`frontend/.context/`** - Aprendizados específicos do frontend React/TypeScript
+- **`.context/`** (raiz) - Aprendizados gerais (devops, configuração, integração)
+
+## 📋 Quando Documentar
+
+A LLM deve documentar automaticamente quando:
+
+1. **Resolve um problema novo** que não estava documentado
+2. **Identifica um padrão** que deve ser seguido ou evitado
+3. **Encontra uma solução** que pode ser reutilizada
+4. **Comete um erro** e o corrige (aprendizado importante)
+
+## 📝 Processo de Documentação
+
+### 1. Antes de Implementar
+
+**SEMPRE consultar `.context/` apropriado antes de:**
+- Implementar nova funcionalidade no backend → `backend/.context/`
+- Implementar nova funcionalidade no frontend → `frontend/.context/`
+- Resolver bug ou problema → `.context/` do domínio correspondente
+- Criar novo model/view/service → `backend/.context/`
+- Criar novo componente/hook → `frontend/.context/`
+- Configurar deploy/CI/CD → `.context/` (raiz)
+
+### 2. Durante Implementação
+
+Se encontrar dificuldade ou erro:
+1. Identificar domínio (backend/frontend/geral)
+2. Verificar se já existe em `.context/mistakes.md` do domínio
+3. Se não existir, documentar após resolver
+
+### 3. Após Resolver Problema
+
+**Documentar automaticamente no `.context/` correto** seguindo este formato:
+
+```markdown
+---
+date: YYYY-MM-DD
+category: [backend|frontend|devops|general]
+tags: [tag1, tag2]
+severity: [low|medium|high|critical]
+---
+
+## [Título Descritivo]
+
+### Contexto
+[O que estava sendo feito]
+
+### Problema/Aprendizado
+[Descrição clara]
+
+### Solução
+[Como foi resolvido]
+
+### Lições Aprendidas
+[O que evitar no futuro]
+
+### Referências
+- Arquivos: `path/to/file.py`
+- Docs: `docs/ARCHITECTURE.md`
+```
+
+## 📁 Estrutura de Arquivos em Cada `.context/`
+
+Cada pasta `.context/` (backend, frontend, raiz) contém:
+
+### `learnings.md`
+- Aprendizados positivos (o que funcionou bem)
+- Padrões que devem ser replicados
+- Soluções elegantes
+
+### `mistakes.md`
+- Erros já enfrentados
+- Soluções para problemas comuns
+- O que evitar
+
+### `patterns.md`
+- Padrões identificados que funcionam
+- Convenções do projeto
+- Boas práticas específicas
+
+### `anti-patterns.md`
+- Padrões que devem ser evitados
+- O que não fazer
+- Armadilhas comuns
+
+### `README.md`
+- Guia de uso específico do domínio
+- Quando usar aquela pasta
+- Formato e convenções
+
+## 🔍 Critérios de Severidade
+
+- **critical**: Erros que quebram funcionalidade ou segurança
+- **high**: Problemas importantes que afetam qualidade
+- **medium**: Aprendizados relevantes mas não críticos
+- **low**: Notas menores, podem ser consolidadas depois
+
+## ✅ Checklist de Documentação
+
+Antes de finalizar qualquer tarefa que envolveu aprendizado:
+
+- [ ] Domínio identificado (backend/frontend/geral)?
+- [ ] Problema/solução documentado no `.context/` correto?
+- [ ] Arquivo correto escolhido (learnings/mistakes/patterns/anti-patterns)?
+- [ ] Severidade correta atribuída?
+- [ ] Tags relevantes adicionadas?
+- [ ] Referências incluídas?
+- [ ] Formato seguido corretamente?
+
+## 🚫 O Que NÃO Documentar
+
+- Informações já em `.cursorrules` ou `docs/`
+- Aprendizados muito específicos (uma linha de código)
+- Informações temporárias ou experimentais
+- Duplicatas de aprendizados já documentados
+
+## 🔄 Manutenção
+
+- **Revisão mensal**: Limpar entradas obsoletas
+- **Consolidação**: Juntar aprendizados similares
+- **Priorização**: Manter apenas severity medium+
+
+## 🎯 Escolhendo o `.context/` Correto
+
+### Use `backend/.context/` quando:
+- Problema/solução é específico de Django, DRF, Python
+- Envolve models, views, serializers, migrations
+- Relacionado a APIs, autenticação, multi-tenancy
+- Performance de queries, ORM
+
+### Use `frontend/.context/` quando:
+- Problema/solução é específico de React, TypeScript
+- Envolve componentes, hooks, estado
+- Relacionado a UI/UX, integração com APIs
+- Performance de renderização, bundle size
+
+### Use `.context/` (raiz) quando:
+- Problema/solução afeta ambos (backend e frontend)
+- Relacionado a DevOps, CI/CD, deploy
+- Configuração de ambiente, variáveis
+- Scripts e automações gerais
+- Decisões arquiteturais gerais
+
+---
+
+**Referências**:
+- `backend/.context/README.md` - Guia do backend
+- `frontend/.context/README.md` - Guia do frontend
+- `.context/README.md` - Guia geral

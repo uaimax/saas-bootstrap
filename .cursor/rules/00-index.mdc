@@ -1,0 +1,83 @@
+---
+description: "Project overview and Deep Research Agent activation instructions"
+alwaysApply: true
+---
+
+# SaaS Bootstrap - Deep Research Agent
+
+## Visão Geral do Projeto
+
+Projeto Django 5 + DRF para lançamento rápido de MicroSaaS com multi-tenancy por `tenant_id`.
+
+**Stack Principal:**
+- Backend: Django 5 + Django REST Framework
+- Frontend: React SPA (Fase 4)
+- Arquitetura: Multi-tenancy por tenant_id
+- Fase Atual: Fundação (Fase 1)
+
+## Deep Research Agent - Como Usar
+
+### Ativação do Modo Deep Research
+
+Para ativar o modo de pesquisa profunda, você pode usar qualquer uma das seguintes formas:
+
+1. **Mencionar explicitamente**: `@deep-research` ou `deep research mode`
+2. **Solicitar pesquisa profunda**: "Faça uma pesquisa profunda sobre [tópico]"
+3. **Comando direto**: "Deep research mode ativado" para toggle de modo
+4. **Perguntas de research**: Qualquer pergunta que requeira análise de mercado, competidores, tendências ou avaliação técnica
+
+### O Que o Deep Research Agent Faz
+
+Quando ativado, o Cursor Agent executará automaticamente:
+
+- ✅ **Análise Multi-Pergunta**: Gera 5-7 questões estruturadas sobre o tópico
+- ✅ **Busca Web Paralela**: Realiza pesquisas web específicas para cada pergunta usando `@Web`
+- ✅ **Compilação de Resultados**: Organiza achados com fontes documentadas
+- ✅ **Síntese Analítica Crítica**: Identifica padrões, contradições e gaps
+- ✅ **Relatório Estruturado**: Gera documento markdown completo com seções temáticas
+
+### Output Padrão
+
+O relatório gerado seguirá esta estrutura:
+
+```
+Cabeçalho → Sumário Executivo → Seções Temáticas → Análise Crítica → Fontes → Confiança
+```
+
+**Formato Completo:** Ver `10-deep-research-agent.mdc` para template detalhado.
+
+## Regras Universais do Projeto
+
+### ALWAYS
+- Type hints em todas as funções Python
+- Docstrings em classes e funções públicas
+- Arquivos < 300 linhas
+- Testes junto ao app em `tests/`
+- APIs com prefixo `/api/`
+- Variáveis de ambiente para configurações sensíveis
+
+### NEVER
+- Modificar migrations existentes
+- Alterar models críticos (User, Tenant, TenantModel) sem autorização
+- Modificar middleware de tenant
+- Hardcodar URLs, secrets ou configurações de deploy
+- Ignorar zonas de proteção
+
+## Comandos Úteis
+
+```bash
+./dev-start.sh    # Inicia ambiente de desenvolvimento
+./run-tests.sh    # Executa suite de testes
+make migrate      # Aplica migrations
+make seed         # Popula dados de exemplo
+```
+
+## Referências
+
+- `@docs/ARCHITECTURE.md` - Decisões arquiteturais
+- `@docs/context/PROTECTED_AREAS.md` - Zonas de proteção
+- `10-deep-research-agent.mdc` - Regras completas de Deep Research
+- `20-context-documentation.mdc` - Documentação automática de aprendizados
+- `backend/.context/` - Aprendizados do backend Django/DRF
+- `frontend/.context/` - Aprendizados do frontend React/TypeScript
+- `.context/` - Aprendizados gerais (devops, etc)

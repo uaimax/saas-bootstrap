@@ -1,0 +1,42 @@
+# SaaS Bootstrap - Contexto para IA
+
+## Visao Geral
+Projeto Django 5 + DRF para lancamento rapido de MicroSaaS.
+Multi-tenancy por tenant_id em cada model.
+
+## Estrutura
+- backend/config/ - Projeto Django (settings, urls, wsgi)
+- backend/apps/ - Apps modulares
+  - apps/core/ - App base (models base, mixins)
+  - apps/accounts/ - User + Tenant (Fase 1.4)
+  - apps/leads/ - Modulo exemplo (Fase 3)
+- frontend/ - React SPA (Fase 4)
+
+## Convencoes de Codigo
+- Arquivos: maximo 300 linhas
+- Type hints: obrigatorios em funcoes
+- Docstrings: em classes e funcoes publicas
+- Testes: junto ao app em tests/
+
+## Comandos Principais
+- ./dev-start.sh - Inicia ambiente de dev
+- ./run-tests.sh - Executa testes
+- make migrate - Aplica migrations
+- make seed - Popula dados exemplo
+
+## Multi-tenancy
+- Todo model com dados de tenant herda TenantModel (apps.core)
+- Middleware define request.tenant via header X-Tenant-ID
+- ViewSets filtram automaticamente por tenant
+
+## Ambiente
+- Dev: SQLite + DEBUG=True
+- Prod: PostgreSQL via DATABASE_URL
+
+## Aprendizados e Contexto
+- `backend/.context/` - Aprendizados específicos do backend Django/DRF
+- `frontend/.context/` - Aprendizados específicos do frontend React/TypeScript
+- `.context/` - Aprendizados gerais (devops, configuração, etc)
+- Sempre consultar `.context/` apropriado antes de implementar soluções similares
+- Documentar automaticamente novos aprendizados no `.context/` correto
+
