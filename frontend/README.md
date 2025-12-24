@@ -1,6 +1,6 @@
 # Frontend - SaaS Bootstrap
 
-Frontend React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+Frontend React + Vite + TypeScript + Tailwind CSS (direto, sem shadcn/ui)
 
 ## 🚀 Desenvolvimento
 
@@ -35,18 +35,25 @@ VITE_API_URL=/api/v1
 VITE_API_URL=https://api.meusite.com/v1
 ```
 
-## 📁 Estrutura
+## 📁 Estrutura (Modular)
 
 ```
 frontend/
 ├── src/
-│   ├── components/    # Componentes React
-│   ├── pages/         # Páginas/rotas
-│   ├── config/        # Configurações (API, etc)
-│   └── lib/           # Utilitários
-├── public/            # Arquivos estáticos
-└── dist/              # Build de produção
+│   ├── features/      # Módulos organizados por feature
+│   │   ├── auth/     # Autenticação (Login, Register, OAuth)
+│   │   ├── leads/    # Módulo de leads
+│   │   ├── admin/    # Admin UI Kit
+│   │   └── legal/    # Documentos legais
+│   ├── components/   # Componentes compartilhados (ui, layout)
+│   ├── pages/        # Páginas gerais (Home, Dashboard)
+│   ├── config/       # Configurações (API, etc)
+│   └── lib/          # Utilitários
+├── public/           # Arquivos estáticos
+└── dist/             # Build de produção
 ```
+
+**Estrutura Modular**: O código está organizado por features/módulos em `src/features/`, facilitando manutenção e escalabilidade.
 
 ## 🔗 Integração com Backend
 

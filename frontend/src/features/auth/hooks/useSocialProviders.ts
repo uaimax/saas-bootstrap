@@ -1,7 +1,7 @@
 /** Hook para buscar e gerenciar providers sociais disponíveis. */
 
 import { useState, useEffect } from 'react';
-import { getAvailableProviders } from '@/services/socialAuth';
+import { getAvailableProviders } from '@/features/auth/services/socialAuth';
 
 export interface SocialProvider {
   provider: string;

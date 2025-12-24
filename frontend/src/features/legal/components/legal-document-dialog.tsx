@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getTerms, getPrivacyPolicy, type LegalDocument } from '@/services/legal';
+import { getTerms, getPrivacyPolicy, type LegalDocument } from '@/features/legal/services/legal';
 
 interface LegalDocumentDialogProps {
   open: boolean;

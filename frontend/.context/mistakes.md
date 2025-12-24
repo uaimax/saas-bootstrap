@@ -101,3 +101,158 @@ O problema é o `"""` no final - isso não é sintaxe válida para comentários 
 - Arquivos: `frontend/src/**/*.tsx`, `frontend/src/**/*.ts`
 
 ---
+
+---
+date: 2025-01-27
+category: frontend
+tags: [react, hooks, useEffect, rules-of-hooks]
+severity: critical
+---
+
+## Violação das Regras dos Hooks: useEffect Após Retornos Condicionais
+
+### Contexto
+Componente `TenantSelector` quebrando com erro "React has detected a change in the order of Hooks" e página ficando em branco.
+
+### Problema
+O `useEffect` estava sendo chamado **depois** de retornos condicionais (`return null`), violando as regras dos hooks do React:
+
+```typescript
+// ❌ ERRADO
+export function TenantSelector() {
+  const { user } = useAuth();
+  const { tenants, loading } = useAvailableTenants();
+
+  if (loading) {
+    return null; // Retorno condicional ANTES do useEffect
+  }
+
+  if (!user) {
+    return null; // Outro retorno condicional
+  }
+
+  useEffect(() => { // ❌ Hook chamado DEPOIS de retornos condicionais
+    // ...
+  }, [deps]);
+}
+```
+
+**Erro resultante:**
+```
+React has detected a change in the order of Hooks called by TenantSelector.
+This will lead to bugs and errors if not fixed.
+```
+
+### Solução
+**TODOS os hooks devem ser chamados ANTES de qualquer retorno condicional:**
+
+```typescript
+// ✅ CORRETO
+export function TenantSelector() {
+  // 1. TODOS OS HOOKS PRIMEIRO (sempre na mesma ordem)
+  const { user } = useAuth();
+  const { tenants, loading } = useAvailableTenants();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => { // ✅ Hook ANTES de qualquer return
+    // ...
+  }, [deps]);
+
+  // 2. DEPOIS fazer retornos condicionais
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  // 3. Resto do componente
+  return <div>...</div>;
+}
+```
+
+### Lições Aprendidas
+- **SEMPRE** chamar todos os hooks no topo do componente, antes de qualquer `return`
+- A ordem dos hooks deve ser **sempre a mesma** em cada render
+- Retornos condicionais (`return null`, `return <Component />`) devem vir **depois** de todos os hooks
+- Violar essa regra causa erros silenciosos que podem quebrar o render completamente
+- Páginas em branco podem ser causadas por violação das regras dos hooks
+
+### Referências
+- Arquivos: `frontend/src/components/admin/layout/TenantSelector.tsx`
+- Docs: [Rules of Hooks - React](https://react.dev/reference/rules/rules-of-hooks)
+
+---
+
+---
+date: 2025-01-27
+category: frontend
+tags: [react, hooks, useEffect, dependencies, state-management]
+severity: high
+---
+
+## useEffect com Dependências Incorretas Causa Re-execuções Desnecessárias
+
+### Contexto
+Componente `TenantSelector` deselecionando empresa automaticamente ao navegar entre páginas.
+
+### Problema
+O `useEffect` estava usando `tenants` (array) como dependência, causando re-execuções toda vez que o array mudava (mesmo que fosse o mesmo conteúdo):
+
+```typescript
+// ❌ ERRADO
+useEffect(() => {
+  if (isSuperAdmin && tenants.length > 0) {
+    const currentSlug = localStorage.getItem("company_id");
+    if (!currentSlug) {
+      // Selecionar primeira empresa
+    }
+  }
+}, [isSuperAdmin, tenants]); // ❌ Array como dependência causa re-execuções
+```
+
+**Problema:** Toda vez que `tenants` é recriado (mesmo com mesmo conteúdo), o `useEffect` executa novamente, potencialmente limpando a seleção.
+
+### Solução
+**Usar `tenants.length` ou verificar se realmente precisa atualizar:**
+
+```typescript
+// ✅ CORRETO
+useEffect(() => {
+  if (isSuperAdmin && tenants.length > 0) {
+    const currentSlug = localStorage.getItem("company_id") || localStorage.getItem("tenant_id");
+
+    if (!currentSlug) {
+      // Só selecionar se não houver empresa selecionada
+      const firstTenant = tenants[0];
+      if (firstTenant?.slug) {
+        localStorage.setItem("company_id", firstTenant.slug);
+      }
+    } else {
+      // Verificar se empresa selecionada ainda existe
+      const selectedTenantExists = tenants.some((t) => t.slug === currentSlug);
+      if (!selectedTenantExists && tenants.length > 0) {
+        // Só atualizar se empresa não existir mais
+        const firstTenant = tenants[0];
+        if (firstTenant?.slug) {
+          localStorage.setItem("company_id", firstTenant.slug);
+        }
+      }
+    }
+  }
+}, [isSuperAdmin, tenants.length]); // ✅ Usar length ao invés de array completo
+```
+
+### Lições Aprendidas
+- **NUNCA** usar arrays/objetos como dependências diretas do `useEffect` se não precisar reagir a mudanças de conteúdo
+- Usar valores primitivos (`length`, `id`, etc.) quando possível
+- Sempre verificar se realmente precisa atualizar antes de modificar estado/localStorage
+- Re-execuções desnecessárias podem causar bugs sutis (deseleção, re-renders, etc.)
+- Verificar se valor já existe antes de sobrescrever
+
+### Referências
+- Arquivos: `frontend/src/components/admin/layout/TenantSelector.tsx`
+- Docs: [useEffect Dependencies - React](https://react.dev/reference/react/useEffect#specifying-reactive-dependencies)
+
+---

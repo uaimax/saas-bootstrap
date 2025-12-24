@@ -1,7 +1,7 @@
 /** Componente para proteger rotas que requerem autenticação. */
 
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

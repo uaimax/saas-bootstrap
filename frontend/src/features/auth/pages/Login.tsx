@@ -1,6 +1,6 @@
 /** Página de login seguindo padrão shadcn/ui login-05. */
 
-import { LoginForm } from "@/components/forms/login-form";
+import { LoginForm } from "@/features/auth/components/login-form";
 
 export default function Login() {
   return (

@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -93,4 +93,5 @@ export default function OAuthCallback() {
 
   return null;
 }
+
 

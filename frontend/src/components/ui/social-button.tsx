@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { initiateSocialLogin } from '@/services/socialAuth';
+import { initiateSocialLogin } from '@/features/auth/services/socialAuth';
 
 interface SocialButtonProps {
   provider: string;

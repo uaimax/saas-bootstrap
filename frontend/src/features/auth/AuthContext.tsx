@@ -13,6 +13,9 @@ export interface User {
     name: string;
     slug: string;
   } | null;
+  is_superuser?: boolean; // Super admin pode ver todos os tenants
+  is_staff?: boolean; // Staff user
+  permissions?: string[]; // Permissões RBAC do usuário
   created_at: string;
 }
 

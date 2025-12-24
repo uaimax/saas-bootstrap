@@ -247,3 +247,4 @@ npx shadcn@latest add [component-name]
 
 **Se a resposta for "sim" para qualquer uma, use shadcn/ui!**
 
+

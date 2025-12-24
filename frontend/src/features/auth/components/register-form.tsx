@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useState, useEffect } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useSocialProviders } from "@/hooks/useSocialProviders"
+import { useAuth } from "@/features/auth/AuthContext"
+import { useSocialProviders } from "@/features/auth/hooks/useSocialProviders"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
-import { LegalDocumentDialog } from "@/components/legal-document-dialog"
+import { LegalDocumentDialog } from "@/features/legal/components/legal-document-dialog"
 
 const registerSchema = z
   .object({

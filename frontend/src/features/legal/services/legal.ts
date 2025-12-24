@@ -24,3 +24,4 @@ export const getPrivacyPolicy = async (): Promise<LegalDocument> => {
   return response.data;
 };
 
+

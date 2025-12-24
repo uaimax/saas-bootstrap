@@ -1,8 +1,8 @@
-/** Página inicial seguindo padrões shadcn/ui. */
+/** Página inicial com Tailwind CSS direto. */
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { apiClient } from "@/config/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export default function Home() {
     { icon: Database, title: "Multi-tenancy", description: "Isolamento de dados por tenant" },
     { icon: Shield, title: "Auditoria LGPD", description: "Conformidade desde o dia zero" },
     { icon: Code, title: "React + TypeScript", description: "Frontend moderno e type-safe" },
-    { icon: Zap, title: "shadcn/ui", description: "Componentes acessíveis e customizáveis" },
+    { icon: Zap, title: "Tailwind CSS", description: "Estilização direta e customizável" },
   ];
 
   return (

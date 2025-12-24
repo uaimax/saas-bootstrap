@@ -1,6 +1,6 @@
 /** Página de registro seguindo padrão shadcn/ui. */
 
-import { RegisterForm } from "@/components/forms/register-form";
+import { RegisterForm } from "@/features/auth/components/register-form";
 
 export default function Register() {
   return (
