@@ -61,3 +61,6 @@ Isso facilita:
 - Identificação clara de rotas de API
 - Migração futura sem quebrar URLs
 
+
+
+

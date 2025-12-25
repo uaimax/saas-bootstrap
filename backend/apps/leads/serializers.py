@@ -2,11 +2,11 @@
 
 from rest_framework import serializers
 
-from apps.core.serializers import CompanySerializer
+from apps.core.serializers import WorkspaceSerializer
 from apps.leads.models import Lead
 
 
-class LeadSerializer(CompanySerializer):
+class LeadSerializer(WorkspaceSerializer):
     """Serializer para modelo Lead."""
 
     status_display = serializers.CharField(source="get_status_display", read_only=True)
@@ -15,11 +15,11 @@ class LeadSerializer(CompanySerializer):
         model = Lead
         fields = [
             "id",
-            "company_id",
+            "workspace_id",
             "name",
             "email",
             "phone",
-            "client_company",
+            "client_workspace",
             "status",
             "status_display",
             "notes",
@@ -27,7 +27,7 @@ class LeadSerializer(CompanySerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "company_id", "created_at", "updated_at"]
+        read_only_fields = ["id", "workspace_id", "created_at", "updated_at"]
 
 
 class LeadListSerializer(serializers.ModelSerializer):
@@ -41,7 +41,7 @@ class LeadListSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "email",
-            "client_company",
+            "client_workspace",
             "status",
             "status_display",
             "source",

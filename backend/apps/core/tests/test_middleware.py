@@ -2,103 +2,103 @@
 
 from django.test import RequestFactory, TestCase
 
-from apps.accounts.models import Company, User
-from apps.core.middleware import CompanyMiddleware
+from apps.accounts.models import Workspace, User
+from apps.core.middleware import WorkspaceMiddleware
 
 
-class CompanyMiddlewareTestCase(TestCase):
-    """Testes para CompanyMiddleware."""
+class WorkspaceMiddlewareTestCase(TestCase):
+    """Testes para WorkspaceMiddleware."""
 
     def setUp(self) -> None:
         """Configuração inicial para os testes."""
         self.factory = RequestFactory()
-        self.middleware = CompanyMiddleware(lambda request: None)
-        self.company = Company.objects.create(name="Test Company", slug="test-company")
+        self.middleware = WorkspaceMiddleware(lambda request: None)
+        self.workspace = Workspace.objects.create(name="Test Workspace", slug="test-workspace")
 
-    def test_middleware_sets_company_from_header(self) -> None:
-        """Testa que middleware define company quando header existe."""
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="test-company")
+    def test_middleware_sets_workspace_from_header(self) -> None:
+        """Testa que middleware define workspace quando header existe."""
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="test-workspace")
         self.middleware(request)
 
-        self.assertIsNotNone(request.company)
-        self.assertEqual(request.company.slug, "test-company")
-        self.assertEqual(request.company, self.company)
+        self.assertIsNotNone(request.workspace)
+        self.assertEqual(request.workspace.slug, "test-workspace")
+        self.assertEqual(request.workspace, self.workspace)
 
     def test_middleware_sets_none_when_header_missing(self) -> None:
         """Testa que middleware define None quando header não existe."""
         request = self.factory.get("/")
         self.middleware(request)
 
-        self.assertIsNone(request.company)
+        self.assertIsNone(request.workspace)
 
-    def test_middleware_sets_none_when_company_not_found(self) -> None:
-        """Testa que middleware define None quando company não existe."""
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="inexistente")
+    def test_middleware_sets_none_when_workspace_not_found(self) -> None:
+        """Testa que middleware define None quando workspace não existe."""
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="inexistente")
         self.middleware(request)
 
-        self.assertIsNone(request.company)
+        self.assertIsNone(request.workspace)
 
-    def test_middleware_ignores_inactive_companies(self) -> None:
-        """Testa que middleware ignora companies inativas."""
-        inactive_company = Company.objects.create(
-            name="Inactive Company", slug="inactive-company", is_active=False
+    def test_middleware_ignores_inactive_workspaces(self) -> None:
+        """Testa que middleware ignora workspaces inativos."""
+        inactive_workspace = Workspace.objects.create(
+            name="Inactive Workspace", slug="inactive-workspace", is_active=False
         )
 
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="inactive-company")
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="inactive-workspace")
         self.middleware(request)
 
-        self.assertIsNone(request.company)
+        self.assertIsNone(request.workspace)
 
     def test_middleware_handles_empty_header(self) -> None:
         """Testa que middleware lida com header vazio."""
         request = self.factory.get("/")
         self.middleware(request)
 
-        self.assertIsNone(request.company)
+        self.assertIsNone(request.workspace)
 
     def test_middleware_rejects_invalid_slug_format(self) -> None:
         """Testa que middleware rejeita slugs com formato inválido."""
         # Testar vários formatos inválidos
         invalid_slugs = [
-            "Company-Name",  # Maiúsculas
-            "company_name",  # Underscore
-            "company@name",  # Caracteres especiais
-            "company name",  # Espaços
-            "company.name",  # Ponto
+            "Workspace-Name",  # Maiúsculas
+            "workspace_name",  # Underscore
+            "workspace@name",  # Caracteres especiais
+            "workspace name",  # Espaços
+            "workspace.name",  # Ponto
             "../../etc/passwd",  # Path traversal
             "<script>",  # XSS attempt
         ]
 
         for invalid_slug in invalid_slugs:
-            request = self.factory.get("/", HTTP_X_COMPANY_ID=invalid_slug)
+            request = self.factory.get("/", HTTP_X_WORKSPACE_ID=invalid_slug)
             self.middleware(request)
             self.assertIsNone(
-                request.company,
+                request.workspace,
                 f"Slug '{invalid_slug}' deveria ser rejeitado",
             )
 
     def test_middleware_accepts_valid_slug_format(self) -> None:
         """Testa que middleware aceita slugs com formato válido."""
-        # Criar company com slug válido
-        valid_company = Company.objects.create(
-            name="Valid Company", slug="valid-company-123", is_active=True
+        # Criar workspace com slug válido
+        valid_workspace = Workspace.objects.create(
+            name="Valid Workspace", slug="valid-workspace-123", is_active=True
         )
 
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="valid-company-123")
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="valid-workspace-123")
         self.middleware(request)
 
-        self.assertIsNotNone(request.company)
-        self.assertEqual(request.company, valid_company)
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="")
+        self.assertIsNotNone(request.workspace)
+        self.assertEqual(request.workspace, valid_workspace)
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="")
         self.middleware(request)
 
-        self.assertIsNone(request.company)
+        self.assertIsNone(request.workspace)
 
     def test_middleware_handles_whitespace_in_header(self) -> None:
         """Testa que middleware remove espaços em branco do header."""
-        request = self.factory.get("/", HTTP_X_COMPANY_ID="  test-company  ")
+        request = self.factory.get("/", HTTP_X_WORKSPACE_ID="  test-workspace  ")
         self.middleware(request)
 
-        self.assertIsNotNone(request.company)
-        self.assertEqual(request.company.slug, "test-company")
+        self.assertIsNotNone(request.workspace)
+        self.assertEqual(request.workspace.slug, "test-workspace")
 

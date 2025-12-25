@@ -3,24 +3,31 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.accounts.models import Tenant
+from apps.accounts.models import Workspace
 
 User = get_user_model()
 
 
 @pytest.fixture
-def tenant(db) -> Tenant:
-    """Cria um tenant de teste."""
-    return Tenant.objects.create(name="Test Tenant", slug="test-tenant")
+def workspace(db) -> Workspace:
+    """Cria um workspace de teste."""
+    return Workspace.objects.create(name="Test Workspace", slug="test-workspace", is_active=True)
 
 
 @pytest.fixture
-def user(db, tenant: Tenant) -> User:
-    """Cria um usuário de teste com tenant."""
+def tenant(db) -> Workspace:
+    """Alias para workspace (compatibilidade)."""
+    return Workspace.objects.create(name="Test Workspace", slug="test-workspace", is_active=True)
+
+
+@pytest.fixture
+def user(db, workspace: Workspace) -> User:
+    """Cria um usuário de teste com workspace."""
     return User.objects.create_user(
-        username="testuser",
         email="test@example.com",
         password="testpass123",
-        tenant=tenant,
+        workspace=workspace,
+        first_name="Test",
+        last_name="User",
     )
 

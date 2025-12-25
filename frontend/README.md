@@ -1,69 +1,73 @@
-# Frontend - SaaS Bootstrap
+# React + TypeScript + Vite
 
-Frontend React + Vite + TypeScript + Tailwind CSS (direto, sem shadcn/ui)
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Desenvolvimento
+Currently, two official plugins are available:
 
-```bash
-# Instalar dependências
-npm install
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-# Iniciar servidor de desenvolvimento
-npm run dev
+## React Compiler
 
-# Build para produção
-npm run build
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-# Preview do build
-npm run preview
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-## ⚙️ Configuração
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-### Variáveis de Ambiente
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-Crie um arquivo `.env` baseado em `.env.example`:
-
-```bash
-# Desenvolvimento (frontend separado)
-VITE_API_URL=http://localhost:8001/api/v1
-
-# Produção (junto)
-VITE_API_URL=/api/v1
-
-# Produção (separado)
-VITE_API_URL=https://api.meusite.com/v1
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## 📁 Estrutura (Modular)
-
-```
-frontend/
-├── src/
-│   ├── features/      # Módulos organizados por feature
-│   │   ├── auth/     # Autenticação (Login, Register, OAuth)
-│   │   ├── leads/    # Módulo de leads
-│   │   ├── admin/    # Admin UI Kit
-│   │   └── legal/    # Documentos legais
-│   ├── components/   # Componentes compartilhados (ui, layout)
-│   ├── pages/        # Páginas gerais (Home, Dashboard)
-│   ├── config/       # Configurações (API, etc)
-│   └── lib/          # Utilitários
-├── public/           # Arquivos estáticos
-└── dist/             # Build de produção
-```
-
-**Estrutura Modular**: O código está organizado por features/módulos em `src/features/`, facilitando manutenção e escalabilidade.
-
-## 🔗 Integração com Backend
-
-O frontend está configurado para se conectar ao backend via:
-
-- **Cliente HTTP**: `src/config/api.ts`
-- **Variável de ambiente**: `VITE_API_URL`
-- **Header automático**: `X-Tenant-ID` (via localStorage)
-
-## 📚 Documentação
-
-- [Guia de Integração](../docs/FRONTEND_INTEGRATION.md)
-- [Checklist de Integração](../docs/INTEGRATION_CHECKLIST.md)

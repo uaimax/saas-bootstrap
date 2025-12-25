@@ -10,10 +10,10 @@
 
 ## 🔴 Essencial Agora (1 item)
 
-### 1. Validação de Formato do Company Header
+### 1. Validação de Formato do Workspace Header
 
 **Por que é essencial:**
-- Previne enumeração de companies (tentativas de descobrir slugs válidos)
+- Previne enumeração de workspaces (tentativas de descobrir slugs válidos)
 - Previne queries maliciosas com caracteres especiais
 - Custo baixo de implementação (~10 linhas)
 - Risco médio se não implementado (enumeração + possível DoS)
@@ -23,16 +23,16 @@
 # apps/core/middleware.py
 import re
 
-class CompanyMiddleware:
+class WorkspaceMiddleware:
     def __call__(self, request):
-        company_slug = (
-            request.headers.get("X-Company-ID", "").strip()
+        workspace_slug = (
+            request.headers.get("X-Workspace-ID", "").strip()
             or request.headers.get("X-Tenant-ID", "").strip()
         )
 
         # ✅ ESSENCIAL: Validar formato antes de query
-        if company_slug and not re.match(r'^[a-z0-9-]+$', company_slug):
-            request.company = None
+        if workspace_slug and not re.match(r'^[a-z0-9-]+$', workspace_slug):
+            request.workspace = None
             return self.get_response(request)
 
         # ... resto do código
@@ -44,7 +44,7 @@ class CompanyMiddleware:
 
 ## 🟡 Importante Mas Não Crítico (2 itens)
 
-### 2. Cache do Company Header Lookup
+### 2. Cache do Workspace Header Lookup
 
 **Por que não é essencial agora:**
 - Funciona sem cache (apenas performance)
@@ -68,7 +68,7 @@ class CompanyMiddleware:
 
 **O que verificar:**
 - ✅ `UserSerializer` - Já tem `read_only_fields = ['id', 'email', 'is_staff']`
-- ✅ `LeadSerializer` - Já tem `read_only_fields = ['id', 'company_id', ...]`
+- ✅ `LeadSerializer` - Já tem `read_only_fields = ['id', 'workspace_id', ...]`
 - ⚠️ Verificar outros serializers se existirem
 
 **Status:** ✅ **JÁ ESTÁ CORRETO** - Apenas manter disciplina em novos
@@ -98,8 +98,8 @@ class CompanyMiddleware:
 
 | Item | Essencial? | Prioridade | Status |
 |------|-----------|------------|--------|
-| Validação formato Company Header | ✅ SIM | 🔴 Alta | ⚠️ Não implementado |
-| Cache Company Header | ❌ NÃO | 🟡 Média | ⏸️ Pode esperar |
+| Validação formato Workspace Header | ✅ SIM | 🔴 Alta | ⚠️ Não implementado |
+| Cache Workspace Header | ❌ NÃO | 🟡 Média | ⏸️ Pode esperar |
 | Revisão Serializers | ❌ NÃO | 🟡 Média | ✅ Já correto |
 | Sanitização Input | ❌ NÃO | 🟢 Baixa | 📝 Documentado |
 | Query Params | ❌ NÃO | 🟢 Baixa | 📝 Documentado |
@@ -110,7 +110,7 @@ class CompanyMiddleware:
 ## 🎯 Conclusão
 
 **Apenas 1 item é essencial agora:**
-1. ✅ **Validação de formato do Company Header** - Implementar agora (~10 linhas)
+1. ✅ **Validação de formato do Workspace Header** - Implementar agora (~10 linhas)
 
 **Todos os outros itens:**
 - Já estão implementados, ou
@@ -119,5 +119,5 @@ class CompanyMiddleware:
 
 ---
 
-**Recomendação:** Implementar apenas a validação de formato do Company Header agora. O resto pode ser feito conforme necessidade.
+**Recomendação:** Implementar apenas a validação de formato do Workspace Header agora. O resto pode ser feito conforme necessidade.
 

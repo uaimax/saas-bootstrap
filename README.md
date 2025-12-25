@@ -61,15 +61,68 @@ O bootstrap inclui sistemas estruturais para performance e segurança:
 - ✅ **Cache Strategy** (Redis) - Melhora performance de queries frequentes
 - ✅ **Rate Limiting** (Throttling) - Protege APIs de abuso
 - ✅ **Logging Estruturado** - Facilita debugging e monitoramento
+- ✅ **Sistema de Logging Híbrido** - Sentry (opcional) ou banco de dados
 
 📚 [Guia de Cache e Performance](docs/CACHE_AND_PERFORMANCE.md) | [Variáveis de Ambiente](docs/ENV_VARIABLES.md)
+
+### Sistema de Logging Híbrido
+
+O projeto inclui sistema de logging que funciona de três formas:
+
+**1. Com Sentry SaaS (recomendado para produção):**
+```bash
+# Backend
+USE_SENTRY=true
+SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+
+# Frontend
+VITE_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+```
+
+**2. Com GlitchTip Self-Hosted (alternativa open-source):**
+```bash
+# Backend
+USE_SENTRY=true
+SENTRY_DSN=http://xxx@seu-glitchtip.com/1  # DSN do GlitchTip
+
+# Frontend
+VITE_SENTRY_DSN=http://xxx@seu-glitchtip.com/1
+```
+
+**3. Sem Sentry/GlitchTip (fallback para banco):**
+```bash
+# Backend
+USE_SENTRY=false
+LOG_RETENTION_DAYS=7  # Limpa logs antigos automaticamente
+```
+
+**Características:**
+- ✅ Captura automática de erros (frontend e backend)
+- ✅ Multi-tenancy nativo (isolamento por workspace)
+- ✅ Rate limiting (100 logs/hora)
+- ✅ Cleanup automático (task Celery)
+- ✅ Zero configuração necessária (funciona sem Sentry/GlitchTip)
+- ✅ Suporte a GlitchTip (alternativa open-source ao Sentry)
+
+**Instalação (opcional):**
+```bash
+# Backend (Sentry ou GlitchTip)
+pip install sentry-sdk[django]
+
+# Frontend (Sentry ou GlitchTip)
+npm install @sentry/react
+```
+
+📚 Mais detalhes:
+- [Arquitetura](docs/ARCHITECTURE.md#13-sistema-de-logging-híbrido-sentryglitchtip--banco)
+- [Setup do GlitchTip](docs/GLITCHTIP_SETUP.md) - Guia completo para self-hosted
 
 ## 📋 Fases do Projeto
 
 - ✅ Fase 1: Fundação (estrutura, settings, scripts)
 - ✅ Fase 2: API Base (DRF, OpenAPI)
 - ✅ Fase 3: Módulo de Exemplo (Leads)
-- ✅ Fase 4: Frontend Mínimo (React + shadcn/ui)
+- ✅ Fase 4: Frontend Mínimo (React + Tailwind CSS)
 
 ## 📚 Documentação
 
@@ -93,5 +146,5 @@ O bootstrap inclui sistemas estruturais para performance e segurança:
 - React 18+ + Vite
 - TypeScript
 - Tailwind CSS
-- shadcn/ui (componentes UI)
+- Componentes UI customizados (Tailwind CSS)
 

@@ -1,40 +1,29 @@
-/** Componente para exibir estado de carregamento. */
+import { Skeleton } from "@/components/ui/skeleton"
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-
-export interface LoadingStateProps {
-  /** Mensagem opcional de carregamento */
-  message?: string;
-  /** Número de linhas skeleton (padrão: 5) */
-  rows?: number;
-  /** Classe CSS adicional */
-  className?: string;
+interface LoadingStateProps {
+  rows?: number
+  columns?: number
 }
 
-/**
- * Componente para exibir estado de carregamento usando skeleton loaders.
- *
- * @example
- * <LoadingState message="Carregando leads..." rows={10} />
- */
-export function LoadingState({
-  message,
-  rows = 5,
-  className,
-}: LoadingStateProps) {
+export function LoadingState({ rows = 5, columns = 4 }: LoadingStateProps) {
   return (
-    <div className={cn("space-y-4 p-4", className)}>
-      {message && (
-        <p className="text-sm text-muted-foreground text-center">{message}</p>
-      )}
-      <div className="space-y-3">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-32" />
+      </div>
+      <div className="space-y-2">
         {Array.from({ length: rows }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
+          <div key={i} className="flex gap-4">
+            {Array.from({ length: columns }).map((_, j) => (
+              <Skeleton key={j} className="h-12 flex-1" />
+            ))}
+          </div>
         ))}
       </div>
     </div>
-  );
+  )
 }
+
 
 

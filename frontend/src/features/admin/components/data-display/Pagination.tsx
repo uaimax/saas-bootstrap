@@ -1,160 +1,128 @@
-/** Componente de paginação para tabelas (similar ao Django Admin). */
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-
-export interface PaginationInfo {
-  /** Página atual (1-indexed) */
-  currentPage: number;
-  /** Total de páginas */
-  totalPages: number;
-  /** Total de itens */
-  totalItems: number;
-  /** Itens por página */
-  pageSize: number;
-  /** Índice do primeiro item da página atual */
-  startIndex: number;
-  /** Índice do último item da página atual */
-  endIndex: number;
+interface PaginationProps {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  onNext?: () => void
+  onPrevious?: () => void
+  className?: string
 }
 
-export interface PaginationProps {
-  /** Informações de paginação */
-  pagination: PaginationInfo;
-  /** Callback quando a página muda */
-  onPageChange: (page: number) => void;
-  /** Callback quando o tamanho da página muda */
-  onPageSizeChange: (pageSize: number) => void;
-  /** Opções de tamanho de página */
-  pageSizeOptions?: number[];
-  /** Classe CSS adicional */
-  className?: string;
-}
-
-/**
- * Componente de paginação para tabelas.
- * Similar ao Django Admin, com navegação de páginas e controle de tamanho.
- *
- * @example
- * <Pagination
- *   pagination={paginationInfo}
- *   onPageChange={(page) => setPage(page)}
- *   onPageSizeChange={(size) => setPageSize(size)}
- * />
- */
 export function Pagination({
-  pagination,
+  currentPage,
+  totalPages,
   onPageChange,
-  onPageSizeChange,
-  pageSizeOptions = [10, 25, 50, 100],
+  onNext,
+  onPrevious,
   className,
 }: PaginationProps) {
-  const { currentPage, totalPages, totalItems, pageSize, startIndex, endIndex } = pagination;
+  if (totalPages <= 1) return null
 
-  const handleFirstPage = () => {
-    if (currentPage > 1) {
-      onPageChange(1);
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    const maxVisible = 5
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i)
+        }
+        pages.push("...")
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push("...")
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        pages.push(1)
+        pages.push("...")
+        pages.push(currentPage - 1)
+        pages.push(currentPage)
+        pages.push(currentPage + 1)
+        pages.push("...")
+        pages.push(totalPages)
+      }
     }
-  };
 
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
-  const handleLastPage = () => {
-    if (currentPage < totalPages) {
-      onPageChange(totalPages);
-    }
-  };
-
-  if (totalItems === 0) {
-    return null;
+    return pages
   }
 
   return (
-    <div className={cn("flex items-center justify-between px-2 py-4", className)}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>
-          Mostrando {startIndex} a {endIndex} de {totalItems} itens
-        </span>
-        <span className="text-muted-foreground">|</span>
-        <span>Itens por página:</span>
-        <Select
-          value={String(pageSize)}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
-        >
-          <SelectTrigger className="h-8 w-[70px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {pageSizeOptions.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
+    <div className={cn("flex items-center justify-between", className)}>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
-          onClick={handleFirstPage}
+          onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          aria-label="Primeira página"
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
           size="sm"
-          onClick={handlePreviousPage}
+          onClick={() => {
+            onPrevious?.()
+            onPageChange(currentPage - 1)
+          }}
           disabled={currentPage === 1}
-          aria-label="Página anterior"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground">
-          Página {currentPage} de {totalPages}
-        </span>
+      </div>
+
+      <div className="flex items-center gap-1">
+        {getPageNumbers().map((page, index) => (
+          <div key={index}>
+            {page === "..." ? (
+              <span className="px-2 py-1 text-sm text-muted-foreground">...</span>
+            ) : (
+              <Button
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => onPageChange(page as number)}
+                className="min-w-[2.5rem]"
+              >
+                {page}
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
-          onClick={handleNextPage}
-          disabled={currentPage >= totalPages}
-          aria-label="Próxima página"
+          onClick={() => {
+            onNext?.()
+            onPageChange(currentPage + 1)
+          }}
+          disabled={currentPage === totalPages}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
           size="sm"
-          onClick={handleLastPage}
-          disabled={currentPage >= totalPages}
-          aria-label="Última página"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
-  );
+  )
 }
+
 
 

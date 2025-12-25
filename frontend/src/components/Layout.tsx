@@ -1,81 +1,38 @@
-/** Layout principal da aplicação. */
-
-import type { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/AuthContext";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import type { ReactNode } from "react"
+import { Link } from "react-router-dom"
+import { ThemeToggle } from "./theme-toggle"
 
 interface LayoutProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-background">
-        <div className="container mx-auto flex justify-between items-center p-4">
-          <Link to="/" className="text-xl font-bold hover:opacity-80">
+    <div className="min-h-screen bg-background">
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/" className="text-xl font-bold">
             SaaS Bootstrap
           </Link>
-          <nav>
-            <ul className="flex space-x-4 items-center">
-              {user ? (
-                <>
-                  <li>
-                    <Link to="/dashboard" className="hover:underline text-sm font-medium">
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li className="text-sm">
-                    <span className="text-muted-foreground">
-                      {user.first_name || user.username}
-                      {user.tenant && ` (${user.tenant.name})`}
-                    </span>
-                  </li>
-                  <li>
-                    <Button
-                      onClick={handleLogout}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Sair
-                    </Button>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li>
-                    <Link to="/login" className="hover:underline text-sm font-medium">
-                      Login
-                    </Link>
-                  </li>
-                  <li>
-                    <Button asChild variant="outline" size="sm">
-                      <Link to="/register">Registrar</Link>
-                    </Button>
-                  </li>
-                </>
-              )}
-              <li>
-                <ThemeToggle />
-              </li>
-            </ul>
+          <nav className="flex items-center gap-4">
+            <Link to="/login" className="text-sm hover:underline">
+              Login
+            </Link>
+            <Link to="/register" className="text-sm hover:underline">
+              Registrar
+            </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
-      <main className="flex-grow container mx-auto p-4">{children}</main>
-      <footer className="border-t bg-background p-4 text-center text-sm text-muted-foreground">
-        <p>&copy; 2025 SaaS Bootstrap. All rights reserved.</p>
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+      <footer className="border-t mt-auto">
+        <div className="container mx-auto px-4 py-4 text-center text-sm text-muted-foreground">
+          © 2024 SaaS Bootstrap. Todos os direitos reservados.
+        </div>
       </footer>
     </div>
-  );
+  )
 }

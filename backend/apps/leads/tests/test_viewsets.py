@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Company, User
+from apps.accounts.models import Workspace, User
 from apps.leads.models import Lead
 
 
@@ -14,13 +14,13 @@ class LeadViewSetTestCase(TestCase):
     def setUp(self) -> None:
         """Configuração inicial."""
         self.client = APIClient()
-        self.company1 = Company.objects.create(name="Company 1", slug="company-1")
-        self.company2 = Company.objects.create(name="Company 2", slug="company-2")
+        self.workspace1 = Workspace.objects.create(name="Workspace 1", slug="workspace-1")
+        self.workspace2 = Workspace.objects.create(name="Workspace 2", slug="workspace-2")
         self.user1 = User.objects.create_user(
-            email="user1@test.com", password="pass123", company=self.company1
+            email="user1@test.com", password="pass123", workspace=self.workspace1
         )
         self.user2 = User.objects.create_user(
-            email="user2@test.com", password="pass123", company=self.company2
+            email="user2@test.com", password="pass123", workspace=self.workspace2
         )
 
     def test_list_leads_requires_authentication(self) -> None:
@@ -29,21 +29,21 @@ class LeadViewSetTestCase(TestCase):
         # DRF retorna 403 Forbidden quando não autenticado (não 401)
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
-    def test_list_leads_filtered_by_company(self) -> None:
-        """Testa que leads são filtrados por company."""
-        # Criar leads para cada company
+    def test_list_leads_filtered_by_workspace(self) -> None:
+        """Testa que leads são filtrados por workspace."""
+        # Criar leads para cada workspace
         lead1 = Lead.objects.create(
-            company=self.company1, name="Lead 1", email="lead1@test.com"
+            workspace=self.workspace1, name="Lead 1", email="lead1@test.com"
         )
         lead2 = Lead.objects.create(
-            company=self.company2, name="Lead 2", email="lead2@test.com"
+            workspace=self.workspace2, name="Lead 2", email="lead2@test.com"
         )
 
-        # Autenticar como user1 (company1)
+        # Autenticar como user1 (workspace1)
         self.client.force_authenticate(user=self.user1)
-        # Simular company no request (middleware faria isso)
+        # Simular workspace no request (middleware faria isso)
         response = self.client.get(
-            "/api/leads/", HTTP_X_COMPANY_ID=self.company1.slug
+            "/api/leads/", HTTP_X_WORKSPACE_ID=self.workspace1.slug
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -66,7 +66,7 @@ class LeadViewSetTestCase(TestCase):
             "status": "new",
         }
         response = self.client.post(
-            "/api/leads/", data, HTTP_X_COMPANY_ID=self.company1.slug
+            "/api/leads/", data, HTTP_X_WORKSPACE_ID=self.workspace1.slug
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], "New Lead")
@@ -74,10 +74,10 @@ class LeadViewSetTestCase(TestCase):
     def test_filter_by_status(self) -> None:
         """Testa filtro por status."""
         Lead.objects.create(
-            company=self.company1, name="New Lead", email="new@test.com", status="new"
+            workspace=self.workspace1, name="New Lead", email="new@test.com", status="new"
         )
         Lead.objects.create(
-            company=self.company1,
+            workspace=self.workspace1,
             name="Contacted Lead",
             email="contacted@test.com",
             status="contacted",
@@ -85,7 +85,7 @@ class LeadViewSetTestCase(TestCase):
 
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(
-            "/api/leads/?status=new", HTTP_X_COMPANY_ID=self.company1.slug
+            "/api/leads/?status=new", HTTP_X_WORKSPACE_ID=self.workspace1.slug
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -100,15 +100,15 @@ class LeadViewSetTestCase(TestCase):
     def test_search_leads(self) -> None:
         """Testa busca de leads."""
         Lead.objects.create(
-            company=self.company1, name="John Doe", email="john@test.com"
+            workspace=self.workspace1, name="John Doe", email="john@test.com"
         )
         Lead.objects.create(
-            company=self.company1, name="Jane Smith", email="jane@test.com"
+            workspace=self.workspace1, name="Jane Smith", email="jane@test.com"
         )
 
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(
-            "/api/leads/?search=John", HTTP_X_COMPANY_ID=self.company1.slug
+            "/api/leads/?search=John", HTTP_X_WORKSPACE_ID=self.workspace1.slug
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()

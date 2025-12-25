@@ -213,7 +213,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 ### Por Que Evitar
 - Permite escalação de privilégios (alterar `is_staff`)
-- Permite mudança de tenant (alterar `company_id`)
+- Permite mudança de tenant (alterar `workspace_id`)
 - Violação de controle de acesso
 
 ### Referências

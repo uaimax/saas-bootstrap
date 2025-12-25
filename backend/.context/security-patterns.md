@@ -8,42 +8,42 @@ Este arquivo documenta **padrões obrigatórios de segurança** que devem ser se
 
 ### Padrão Obrigatório
 
-**SEMPRE** incluir `CompanyObjectPermission` em ViewSets que herdam de `CompanyViewSet`.
+**SEMPRE** incluir `WorkspaceObjectPermission` em ViewSets que herdam de `WorkspaceViewSet`.
 
 ### ✅ CORRETO
 
 ```python
-from apps.core.permissions import CompanyObjectPermission
-from apps.core.viewsets import CompanyViewSet
+from apps.core.permissions import WorkspaceObjectPermission
+from apps.core.viewsets import WorkspaceViewSet
 from rest_framework.permissions import IsAuthenticated
 
-class MyViewSet(CompanyViewSet):
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+class MyViewSet(WorkspaceViewSet):
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
 ```
 
 ### ❌ ERRADO
 
 ```python
 # ❌ Remove proteção contra IDOR!
-class MyViewSet(CompanyViewSet):
-    permission_classes = [IsAuthenticated]  # Faltou CompanyObjectPermission
+class MyViewSet(WorkspaceViewSet):
+    permission_classes = [IsAuthenticated]  # Faltou WorkspaceObjectPermission
 ```
 
 ### Por Que É Crítico
 
-- **IDOR (Insecure Direct Object Reference)**: Permite acesso a objetos de outras companies
+- **IDOR (Insecure Direct Object Reference)**: Permite acesso a objetos de outras workspaces
 - **Violação de isolamento multi-tenant**: Quebra segurança fundamental
 - **Risco crítico**: Vazamento de dados entre tenants
 
 ### Quando Aplicar
 
-- ✅ **SEMPRE** em ViewSets que herdam de `CompanyViewSet`
+- ✅ **SEMPRE** em ViewSets que herdam de `WorkspaceViewSet`
 - ✅ Mesmo se sobrescrever `permission_classes`
 - ✅ Em todas as ações de objeto (`retrieve`, `update`, `destroy`)
 
 ### Como Funciona
 
-`CompanyObjectPermission` valida que `obj.company_id == request.company.id` antes de permitir acesso.
+`WorkspaceObjectPermission` valida que `obj.workspace_id == request.workspace.id` antes de permitir acesso.
 
 ---
 
@@ -104,7 +104,7 @@ logger.info("Login attempt", extra={"user_id": user.id})  # Filtro redige automa
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'is_staff', 'is_active', 'company_id']
+        fields = ['id', 'email', 'is_staff', 'is_active', 'workspace_id']
         read_only_fields = ['id', 'is_staff']  # ✅ Explícito
         # Campos sensíveis não podem ser alterados
 ```
@@ -125,7 +125,7 @@ class UserSerializer(serializers.ModelSerializer):
 - `id` (sempre)
 - `created_at`, `updated_at` (sempre)
 - `is_staff`, `is_superuser` (sempre)
-- `company_id` (em models CompanyModel)
+- `workspace_id` (em models WorkspaceModel)
 - Campos calculados ou derivados
 - Campos que só podem ser alterados por admins
 
@@ -147,7 +147,7 @@ class UserSerializer(serializers.ModelSerializer):
 ### ✅ CORRETO
 
 ```python
-class LeadViewSet(CompanyViewSet):
+class LeadViewSet(WorkspaceViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -262,8 +262,8 @@ class LeadSerializer(serializers.ModelSerializer):
 Ao criar novos ViewSets, Serializers ou Views:
 
 ### ViewSets
-- [ ] Herda de `CompanyViewSet` se precisa multi-tenancy?
-- [ ] Inclui `CompanyObjectPermission` em `permission_classes`?
+- [ ] Herda de `WorkspaceViewSet` se precisa multi-tenancy?
+- [ ] Inclui `WorkspaceObjectPermission` em `permission_classes`?
 - [ ] Query parameters são validados?
 - [ ] Não usa `.extra()` ou `.raw()` sem sanitização?
 
@@ -278,7 +278,7 @@ Ao criar novos ViewSets, Serializers ou Views:
 - [ ] Campos sensíveis serão redigidos automaticamente?
 
 ### Queries
-- [ ] Sempre filtra por `company` (se CompanyModel)?
+- [ ] Sempre filtra por `workspace` (se WorkspaceModel)?
 - [ ] Usa Django ORM (não SQL raw)?
 - [ ] Query parameters validados?
 
@@ -286,9 +286,9 @@ Ao criar novos ViewSets, Serializers ou Views:
 
 ## 🔗 Referências
 
-- `apps/core/permissions.py` - `CompanyObjectPermission`
+- `apps/core/permissions.py` - `WorkspaceObjectPermission`
 - `apps/core/logging.py` - `SensitiveDataFilter`
-- `apps/core/viewsets.py` - `CompanyViewSet`
+- `apps/core/viewsets.py` - `WorkspaceViewSet`
 - `docs/SECURITY_ANALYSIS.md` - Análise completa
 - `docs/SECURITY_IMPLEMENTATION.md` - Implementação
 - `docs/ARCHITECTURE.md` - Seções 13 e 14
@@ -297,4 +297,7 @@ Ao criar novos ViewSets, Serializers ou Views:
 
 **Última atualização:** 2025-12-24
 **Mantido por:** LLMs e desenvolvedores
+
+
+
 

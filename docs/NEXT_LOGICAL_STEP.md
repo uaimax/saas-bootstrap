@@ -5,7 +5,7 @@
 ### ✅ Implementado (Crítico)
 1. Validação de Ownership (IDOR Prevention)
 2. Filtro de Dados Sensíveis em Logs
-3. Validação de Formato do Company Header
+3. Validação de Formato do Workspace Header
 
 ### 📝 Documentado
 4. Sanitização de Input - Padrão documentado
@@ -119,4 +119,7 @@ def get_queryset(self):
 ---
 
 **Conclusão:** Validar query parameters é o próximo passo mais lógico - rápido, melhora qualidade, e segue padrões já documentados.
+
+
+
 

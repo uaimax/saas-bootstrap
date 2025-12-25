@@ -31,8 +31,8 @@ Esta análise identifica **apenas controles estruturais fundamentais** que devem
 Permite acesso a recursos de outros tenants através de manipulação de IDs.
 
 ### Por que é comum esquecer
-- Django ORM filtra por `company`, mas não valida explicitamente no `get_object()`
-- Se um desenvolvedor criar um ViewSet sem herdar `CompanyViewSet`, o isolamento quebra
+- Django ORM filtra por `workspace`, mas não valida explicitamente no `get_object()`
+- Se um desenvolvedor criar um ViewSet sem herdar `WorkspaceViewSet`, o isolamento quebra
 - Fácil assumir que "já está protegido" sem validação explícita
 
 ### Impacto real
@@ -48,22 +48,22 @@ Criar um mixin/permission que valida explicitamente ownership:
 
 ```python
 # apps/core/permissions.py
-class CompanyObjectPermission(BasePermission):
-    """Valida que objeto pertence à company do request."""
+class WorkspaceObjectPermission(BasePermission):
+    """Valida que objeto pertence à workspace do request."""
 
     def has_object_permission(self, request, view, obj):
-        if not hasattr(obj, 'company'):
+        if not hasattr(obj, 'workspace'):
             return False
-        request_company = getattr(request, 'company', None)
-        if not request_company:
+        request_workspace = getattr(request, 'workspace', None)
+        if not request_workspace:
             return False
-        return obj.company_id == request_company.id
+        return obj.workspace_id == request_workspace.id
 ```
 
-**Aplicar em `CompanyViewSet`:**
+**Aplicar em `WorkspaceViewSet`:**
 ```python
-class CompanyViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+class WorkspaceViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
 ```
 
 **Por que implementar:**
@@ -179,15 +179,15 @@ class SensitiveDataFilter(logging.Filter):
 
 ---
 
-## 🟡 4. Validação e Rate Limiting de Company Header
+## 🟡 4. Validação e Rate Limiting de Workspace Header
 
 ### Risco OWASP
 **A05:2021 – Security Misconfiguration**
 **A07:2021 – Identification and Authentication Failures**
 
 ### Por que é comum esquecer
-- Middleware aceita qualquer `X-Company-ID` e faz query no banco
-- Permite enumeração de companies (tentativas de slug válidos)
+- Middleware aceita qualquer `X-Workspace-ID` e faz query no banco
+- Permite enumeração de workspaces (tentativas de slug válidos)
 - Permite brute force de slugs (muitas queries)
 
 ### Impacto real
@@ -204,8 +204,8 @@ Validação de formato implementada no middleware. Cache pode ser adicionado dep
 **Implementado:**
 ```python
 # Validação de formato (slug válido) - Previne enumeração e queries maliciosas
-if company_slug and not re.match(r'^[a-z0-9-]+$', company_slug):
-    request.company = None
+if workspace_slug and not re.match(r'^[a-z0-9-]+$', workspace_slug):
+    request.workspace = None
     return self.get_response(request)
 ```
 
@@ -214,33 +214,33 @@ Cache de lookup pode ser adicionado depois:
 
 ```python
 # apps/core/middleware.py (modificação)
-class CompanyMiddleware:
+class WorkspaceMiddleware:
     def __call__(self, request):
-        company_slug = request.headers.get("X-Company-ID", "").strip()
+        workspace_slug = request.headers.get("X-Workspace-ID", "").strip()
 
         # Validação de formato (slug válido)
-        if company_slug and not re.match(r'^[a-z0-9-]+$', company_slug):
-            request.company = None
+        if workspace_slug and not re.match(r'^[a-z0-9-]+$', workspace_slug):
+            request.workspace = None
             return self.get_response(request)
 
         # Cache de lookup (prevenir queries repetidas)
-        if company_slug:
-            cache_key = f"company_slug:{company_slug}"
-            company = cache.get(cache_key)
-            if not company:
+        if workspace_slug:
+            cache_key = f"workspace_slug:{workspace_slug}"
+            workspace = cache.get(cache_key)
+            if not workspace:
                 try:
-                    company = Company.objects.filter(is_active=True).get(slug=company_slug)
-                    cache.set(cache_key, company, timeout=300)
-                except Company.DoesNotExist:
-                    company = None
+                    workspace = Workspace.objects.filter(is_active=True).get(slug=workspace_slug)
+                    cache.set(cache_key, workspace, timeout=300)
+                except Workspace.DoesNotExist:
+                    workspace = None
         else:
-            company = None
+            workspace = None
 ```
 
 **Por que projetar:**
 - Validação de formato: implementar agora (custo baixo)
 - Cache: pode ser adicionado depois, mas o gancho deve estar claro
-- Rate limiting: pode ser feito no nível de API (já existe), mas documentar que company lookup deve ser cacheado
+- Rate limiting: pode ser feito no nível de API (já existe), mas documentar que workspace lookup deve ser cacheado
 
 ---
 
@@ -252,7 +252,7 @@ class CompanyMiddleware:
 
 ### Por que é comum esquecer
 - DRF serializers permitem atualizar qualquer campo por padrão
-- Campos como `is_staff`, `is_active`, `company_id` podem ser alterados acidentalmente
+- Campos como `is_staff`, `is_active`, `workspace_id` podem ser alterados acidentalmente
 - Sem whitelist explícita, desenvolvedores podem expor campos sensíveis
 
 ### Impacto real
@@ -337,7 +337,7 @@ if status and status in VALID_STATUSES:
 | 1. Validação de Ownership | 🔴 Crítico | Alto | ✅ SIM |
 | 2. Sanitização de Input | 🟡 Alto | Médio | ⚠️ PROJETAR |
 | 3. Filtro de Dados Sensíveis | 🔴 Crítico | Alto | ✅ SIM |
-| 4. Validação Company Header | 🟡 Médio | Médio | ✅ IMPLEMENTADO (formato) |
+| 4. Validação Workspace Header | 🟡 Médio | Médio | ✅ IMPLEMENTADO (formato) |
 | 5. Mass Assignment | 🟡 Alto | Baixo | ⚠️ PROJETAR |
 | 6. Query Params | 🟢 Baixo | Baixo | ⚠️ PROJETAR |
 
@@ -350,7 +350,7 @@ if status and status in VALID_STATUSES:
 2. **Filtro de Dados Sensíveis em Logs** - Previne vazamento, custo baixo, impacto crítico
 
 ### Implementado (1 item adicional)
-3. **Validação de Formato Company Header** - ✅ Implementado - Previne enumeração e queries maliciosas
+3. **Validação de Formato Workspace Header** - ✅ Implementado - Previne enumeração e queries maliciosas
 
 ### Projetar com Ganchos Claros (3 itens)
 4. **Sanitização de Input** - Padrão claro, implementação quando necessário
@@ -358,7 +358,7 @@ if status and status in VALID_STATUSES:
 6. **Query Params Validation** - Anti-pattern documentado, disciplina
 
 ### Opcional (1 item)
-7. **Cache Company Header** - Pode ser adicionado depois se necessário (performance)
+7. **Cache Workspace Header** - Pode ser adicionado depois se necessário (performance)
 
 ### O Que NÃO Fazer
 - ❌ Não implementar WAF ou ferramentas complexas agora

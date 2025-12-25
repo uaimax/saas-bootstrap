@@ -1,10 +1,15 @@
-"""Models for accounts app - Company and User."""
+"""Models for accounts app - Workspace and User."""
+
+import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import UUIDPrimaryKeyMixin
+from apps.core.models import UUIDPrimaryKeyMixin, WorkspaceModel
 
 
 class UserManager(BaseUserManager):
@@ -43,8 +48,8 @@ class UserManager(BaseUserManager):
         return user
 
 
-class Company(UUIDPrimaryKeyMixin, models.Model):
-    """Modelo de empresa para multi-tenancy."""
+class Workspace(UUIDPrimaryKeyMixin, models.Model):
+    """Modelo de workspace para multi-tenancy."""
 
     # Campos básicos
     name = models.CharField(max_length=255, verbose_name=_("Nome"))
@@ -136,17 +141,39 @@ class Company(UUIDPrimaryKeyMixin, models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))
 
     class Meta:
-        verbose_name = _("Empresa")
-        verbose_name_plural = _("Empresas")
+        verbose_name = _("Workspace")
+        verbose_name_plural = _("Workspaces")
         ordering = ["name"]
 
     def __str__(self) -> str:
-        """Representação string da empresa."""
+        """Representação string do workspace."""
         return self.name
 
 
+class Role(UUIDPrimaryKeyMixin, WorkspaceModel):
+    """Role com permissões string-based por workspace."""
+
+    name = models.CharField(max_length=100, verbose_name=_("Nome"))
+    description = models.TextField(blank=True, verbose_name=_("Descrição"))
+    permissions = models.JSONField(
+        default=list,
+        verbose_name=_("Permissões"),
+        help_text=_("Array de strings no formato 'module.action'"),
+    )
+
+    class Meta:
+        verbose_name = _("Role")
+        verbose_name_plural = _("Roles")
+        unique_together = [["workspace", "name"]]
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        """Representação string do role."""
+        return f"{self.name} ({self.workspace.name})"
+
+
 class User(UUIDPrimaryKeyMixin, AbstractUser):
-    """User customizado com company_id e autenticação por email."""
+    """User customizado com workspace_id e autenticação por email."""
 
     # Email é obrigatório e único
     email = models.EmailField(_("email address"), unique=True, blank=False, null=False)
@@ -161,13 +188,19 @@ class User(UUIDPrimaryKeyMixin, AbstractUser):
         help_text=_("Opcional. 150 caracteres ou menos. Letras, dígitos e @/./+/-/_ apenas."),
     )
 
-    company = models.ForeignKey(
-        Company,
+    workspace = models.ForeignKey(
+        Workspace,
         on_delete=models.CASCADE,
         related_name="users",
         null=True,
         blank=True,
-        verbose_name=_("Empresa"),
+        verbose_name=_("Workspace"),
+    )
+    roles = models.ManyToManyField(
+        "Role",
+        blank=True,
+        related_name="users",
+        verbose_name=_("Roles"),
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))
@@ -185,7 +218,37 @@ class User(UUIDPrimaryKeyMixin, AbstractUser):
 
     def __str__(self) -> str:
         """Representação string do usuário."""
-        return f"{self.email} ({self.company.name if self.company else 'Sem empresa'})"
+        return f"{self.email} ({self.workspace.name if self.workspace else 'Sem workspace'})"
+
+    def get_permissions(self, workspace=None) -> list[str]:
+        """Retorna array de permissões do usuário.
+
+        Se workspace fornecido, retorna permissões apenas daquele workspace.
+        Se não fornecido, retorna permissões do workspace do usuário.
+        Superusers retornam ['*'] (todas as permissões).
+
+        Args:
+            workspace: Workspace opcional para filtrar permissões
+
+        Returns:
+            Lista de strings com permissões do usuário
+        """
+        if self.is_superuser:
+            return ["*"]  # Wildcard para todas as permissões
+
+        target_workspace = workspace or self.workspace
+        if not target_workspace:
+            return []
+
+        # Buscar roles do usuário no workspace
+        user_roles = self.roles.filter(workspace=target_workspace)
+
+        # Coletar todas as permissões (remover duplicatas)
+        all_permissions = set()
+        for role in user_roles:
+            all_permissions.update(role.permissions or [])
+
+        return sorted(list(all_permissions))
 
 
 class LegalDocument(models.Model):
@@ -258,14 +321,14 @@ class LegalDocumentAcceptance(models.Model):
         related_name="acceptances",
         verbose_name=_("Documento"),
     )
-    company = models.ForeignKey(
-        Company,
+    workspace = models.ForeignKey(
+        Workspace,
         on_delete=models.CASCADE,
         related_name="legal_acceptances",
-        verbose_name=_("Empresa"),
+        verbose_name=_("Workspace"),
         null=True,
         blank=True,
-        help_text=_("Empresa do usuário (pode ser None se usuário não tiver company ou documento for global)."),
+        help_text=_("Workspace do usuário (pode ser None se usuário não tiver workspace ou documento for global)."),
     )
     accepted_at = models.DateTimeField(
         auto_now_add=True,
@@ -290,7 +353,7 @@ class LegalDocumentAcceptance(models.Model):
         ordering = ["-accepted_at"]
         indexes = [
             models.Index(fields=["user", "accepted_at"]),
-            models.Index(fields=["company", "accepted_at"]),
+            models.Index(fields=["workspace", "accepted_at"]),
             models.Index(fields=["document", "accepted_at"]),
         ]
         # Um usuário pode aceitar múltiplas versões do mesmo documento
@@ -300,4 +363,95 @@ class LegalDocumentAcceptance(models.Model):
     def __str__(self) -> str:
         """Representação string da aceitação."""
         return f"{self.user.email} aceitou {self.document.get_document_type_display()} v{self.document.version} em {self.accepted_at.strftime('%d/%m/%Y %H:%M')}"
+
+
+class PasswordResetToken(UUIDPrimaryKeyMixin, models.Model):
+    """Token para reset de senha com expiração e uso único.
+
+    Nota: Não herda de WorkspaceModel porque reset de senha é uma operação global,
+    não específica de workspace. Alguns usuários podem não ter workspace.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+        verbose_name=_("Usuário"),
+    )
+    workspace = models.ForeignKey(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+        null=True,
+        blank=True,
+        verbose_name=_("Workspace"),
+        help_text=_("Workspace do usuário (opcional, pode ser None)"),
+    )
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        db_index=True,
+        verbose_name=_("Token"),
+        help_text=_("Token único para reset de senha"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Criado em"),
+        db_index=True,
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Atualizado em"),
+    )
+    expires_at = models.DateTimeField(
+        verbose_name=_("Expira em"),
+        db_index=True,
+    )
+    used_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Usado em"),
+        help_text=_("Data/hora em que o token foi usado para resetar a senha"),
+    )
+
+    class Meta:
+        verbose_name = _("Token de Reset de Senha")
+        verbose_name_plural = _("Tokens de Reset de Senha")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["token", "used_at"]),
+            models.Index(fields=["user", "used_at"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self) -> str:
+        """Representação string do token."""
+        status = "usado" if self.used_at else ("expirado" if self.is_expired() else "válido")
+        return f"Token para {self.user.email} ({status})"
+
+    def is_valid(self) -> bool:
+        """Verifica se o token é válido (não usado e não expirado)."""
+        if self.used_at is not None:
+            return False
+        return not self.is_expired()
+
+    def is_expired(self) -> bool:
+        """Verifica se o token expirou."""
+        return timezone.now() > self.expires_at
+
+    def mark_as_used(self) -> None:
+        """Marca o token como usado."""
+        self.used_at = timezone.now()
+        self.save(update_fields=["used_at"])
+
+    def save(self, *args, **kwargs) -> None:
+        """Sobrescreve save para definir expires_at automaticamente se não fornecido."""
+        if not self.expires_at:
+            expiration_hours = getattr(
+                settings,
+                "PASSWORD_RESET_TOKEN_EXPIRATION_HOURS",
+                24,
+            )
+            self.expires_at = timezone.now() + timedelta(hours=expiration_hours)
+        super().save(*args, **kwargs)
 

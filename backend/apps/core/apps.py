@@ -13,3 +13,6 @@ class CoreConfig(AppConfig):
         """Importa signals quando app está pronto."""
         import apps.core.signals  # noqa: F401
 
+
+
+

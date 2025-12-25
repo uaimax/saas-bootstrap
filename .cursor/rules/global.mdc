@@ -57,7 +57,56 @@ alwaysApply: true
 make migrate      # Aplica migrations
 ```
 
+## Consulta de Erros no GlitchTip/Sentry
+
+### Quando Consultar Erros
+
+Sempre que precisar investigar erros ou problemas reportados, consulte diretamente o GlitchTip/Sentry:
+
+1. **Obter URL do GlitchTip**:
+   - As credenciais estão nas variáveis de ambiente (`.env` do backend e frontend)
+   - Backend: `SENTRY_DSN` (formato: `https://xxx@app.glitchtip.com/14243`)
+   - Frontend: `VITE_SENTRY_DSN` (mesmo formato)
+   - Extrair a URL base do DSN: `https://app.glitchtip.com` (ou URL do self-hosted)
+
+2. **Acessar o Dashboard**:
+   - URL padrão SaaS: `https://app.glitchtip.com`
+   - URL self-hosted: Extrair do DSN (ex: `http://localhost:8000` ou URL customizada)
+   - Credenciais de acesso estão nas variáveis de ambiente ou documentação do projeto
+
+3. **Consultar Erros Específicos**:
+   - Filtrar por projeto (identificado pelo ID no DSN)
+   - Filtrar por ambiente (`ENVIRONMENT` do backend)
+   - Filtrar por data, nível (ERROR, WARNING), ou mensagem
+   - Ver stack traces completos, contexto do request, e breadcrumbs
+
+4. **Verificar Configuração**:
+   ```bash
+   # Backend - Verificar se está configurado
+   cd backend
+   cat .env | grep SENTRY_DSN
+
+   # Frontend - Verificar se está configurado
+   cd frontend
+   cat .env | grep VITE_SENTRY_DSN
+   ```
+
+5. **Testar Conexão**:
+   ```bash
+   # Backend
+   python manage.py test_glitchtip
+
+   # Ou via script standalone
+   python backend/test_glitchtip_connection.py
+   ```
+
+**Importante**:
+- As credenciais (DSN) estão nas `.env` do backend e frontend
+- O DSN contém a URL do GlitchTip e o ID do projeto
+- Use o dashboard para análise detalhada de erros antes de debugar código
+
 ## Referências
 
 - @docs/context/PROTECTED_AREAS.md
 - @docs/ARCHITECTURE.md
+- @docs/GLITCHTIP_SETUP.md - Setup e configuração do GlitchTip

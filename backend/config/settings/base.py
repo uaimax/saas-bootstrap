@@ -54,12 +54,14 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # CORS deve vir antes de CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # i18n - deve vir após SessionMiddleware
     "apps.core.middleware.UUIDSessionMiddleware",  # Limpa sessões com IDs antigos (antes do auth)
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
-    "apps.core.middleware.CompanyMiddleware",  # Multi-tenancy
+    "apps.core.middleware.WorkspaceMiddleware",  # Multi-tenancy
+    "apps.core.middleware.ErrorLoggingMiddleware",  # Captura exceções não tratadas
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -110,6 +112,15 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
+# Idiomas suportados
+LANGUAGES = [
+    ("pt-br", "Português (Brasil)"),
+    ("en", "English"),
+]
+
+# Caminho para arquivos de tradução (nível projeto)
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -130,6 +141,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Paginação padrão (similar ao Django Admin)
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": int(os.environ.get("API_PAGE_SIZE", "25")),
     # Rate Limiting - Configuração base (pode ser sobrescrita por view)
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -138,6 +152,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": os.environ.get("API_THROTTLE_ANON", "100/hour"),
         "user": os.environ.get("API_THROTTLE_USER", "1000/hour"),
+        "logging": "100/hour",  # Limite para endpoint de logs
     },
 }
 
@@ -158,22 +173,43 @@ SITE_BRAND = os.environ.get("SITE_BRAND", PROJECT_NAME).strip()
 API_TITLE = os.environ.get("API_TITLE", f"{PROJECT_NAME} API").strip()
 COPYRIGHT = os.environ.get("COPYRIGHT", PROJECT_NAME).strip()
 
-# SaaS Company Information - Para documentos legais globais
+# SaaS Workspace Information - Para documentos legais globais
 # Essas informações são usadas para substituir placeholders em documentos legais
-SAAS_COMPANY_NAME = os.environ.get("SAAS_COMPANY_NAME", PROJECT_NAME).strip()
-SAAS_COMPANY_LEGAL_NAME = os.environ.get("SAAS_COMPANY_LEGAL_NAME", SAAS_COMPANY_NAME).strip()
-SAAS_COMPANY_CNPJ = os.environ.get("SAAS_COMPANY_CNPJ", "").strip()
-SAAS_COMPANY_ADDRESS = os.environ.get("SAAS_COMPANY_ADDRESS", "").strip()
-SAAS_COMPANY_CITY = os.environ.get("SAAS_COMPANY_CITY", "").strip()
-SAAS_COMPANY_STATE = os.environ.get("SAAS_COMPANY_STATE", "").strip()
-SAAS_COMPANY_PHONE = os.environ.get("SAAS_COMPANY_PHONE", "").strip()
-SAAS_COMPANY_EMAIL = os.environ.get("SAAS_COMPANY_EMAIL", "contato@saasbootstrap.com").strip()
-SAAS_COMPANY_WEBSITE = os.environ.get("SAAS_COMPANY_WEBSITE", "").strip()
+SAAS_WORKSPACE_NAME = os.environ.get("SAAS_WORKSPACE_NAME", PROJECT_NAME).strip()
+SAAS_WORKSPACE_LEGAL_NAME = os.environ.get("SAAS_WORKSPACE_LEGAL_NAME", SAAS_WORKSPACE_NAME).strip()
+SAAS_WORKSPACE_CNPJ = os.environ.get("SAAS_WORKSPACE_CNPJ", "").strip()
+SAAS_WORKSPACE_ADDRESS = os.environ.get("SAAS_WORKSPACE_ADDRESS", "").strip()
+SAAS_WORKSPACE_CITY = os.environ.get("SAAS_WORKSPACE_CITY", "").strip()
+SAAS_WORKSPACE_STATE = os.environ.get("SAAS_WORKSPACE_STATE", "").strip()
+SAAS_WORKSPACE_PHONE = os.environ.get("SAAS_WORKSPACE_PHONE", "").strip()
+SAAS_WORKSPACE_EMAIL = os.environ.get("SAAS_WORKSPACE_EMAIL", "contato@saasbootstrap.com").strip()
+SAAS_WORKSPACE_WEBSITE = os.environ.get("SAAS_WORKSPACE_WEBSITE", "").strip()
 SAAS_SUPPORT_HOURS = os.environ.get("SAAS_SUPPORT_HOURS", "Segunda a Sexta, 9h às 18h").strip()
 SAAS_DPO_NAME = os.environ.get("SAAS_DPO_NAME", "").strip()
 SAAS_DPO_EMAIL = os.environ.get("SAAS_DPO_EMAIL", "").strip()
 SAAS_DPO_PHONE = os.environ.get("SAAS_DPO_PHONE", "").strip()
 SAAS_DPO_ADDRESS = os.environ.get("SAAS_DPO_ADDRESS", "").strip()
+
+# ===========================================
+# Email/SMTP Configuration
+# ===========================================
+# Funciona com qualquer provedor SMTP (Mailgun, SendGrid, SES, etc)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"noreply@{PROJECT_NAME.lower().replace(' ', '')}.com")
+DEFAULT_FROM_NAME = os.environ.get("DEFAULT_FROM_NAME", PROJECT_NAME)
+
+# Timeout para conexões SMTP (em segundos)
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "30"))
+
+# Password Reset Configuration
+PASSWORD_RESET_TOKEN_EXPIRATION_HOURS = int(os.environ.get("PASSWORD_RESET_TOKEN_EXPIRATION_HOURS", "24"))
+PASSWORD_RESET_URL_PATH = os.environ.get("PASSWORD_RESET_URL_PATH", "/reset-password").strip()
 
 # drf-spectacular (OpenAPI) - Definido DEPOIS das variáveis de branding
 SPECTACULAR_SETTINGS = {
@@ -206,7 +242,7 @@ if CORS_ENABLED:
         "user-agent",
         "x-csrftoken",
         "x-requested-with",
-        "x-tenant-id",  # Header customizado para multi-tenancy
+        "x-workspace-id",  # Header customizado para multi-tenancy
     ]
 else:
     CORS_ALLOW_ALL_ORIGINS = False
@@ -239,7 +275,7 @@ JAZZMIN_SETTINGS = {
     "site_icon": None,
     "welcome_sign": f"Bem-vindo ao {SITE_TITLE}",
     "copyright": COPYRIGHT,
-    "search_model": ["accounts.User", "accounts.Company"],
+    "search_model": ["accounts.User", "accounts.Workspace"],
     "user_avatar": None,
     "topmenu_links": [
         {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
@@ -261,7 +297,7 @@ JAZZMIN_SETTINGS = {
     "navigation_expanded": True,
     "hide_apps": [],
     "hide_models": [],
-    "order_with_respect_to": ["accounts", "accounts.Company", "accounts.User"],
+    "order_with_respect_to": ["accounts", "accounts.Workspace", "accounts.User"],
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -365,7 +401,7 @@ REST_AUTH = {
 }
 
 # Social Account Adapter customizado
-SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CompanySocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.WorkspaceSocialAccountAdapter"
 
 # Social Auth Providers (opcionais - apenas se configurados)
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
@@ -494,4 +530,33 @@ LOGGING = {
 # Criar diretório de logs se não existir
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
+
+# Sentry/GlitchTip (opcional) - Sistema de logging híbrido
+# Suporta Sentry SaaS ou GlitchTip (self-hosted, compatível com API do Sentry)
+USE_SENTRY = os.environ.get("USE_SENTRY", "false").lower() == "true"
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")  # Funciona com Sentry ou GlitchTip
+SENTRY_API_TOKEN = os.environ.get("SENTRY_API_TOKEN", "")  # Token para buscar erros via API (opcional)
+LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", "7"))
+
+if USE_SENTRY and SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.celery import CeleryIntegration
+
+        # Configuração funciona tanto com Sentry quanto com GlitchTip
+        # GlitchTip é compatível com a API do Sentry, então usa os mesmos SDKs
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[
+                DjangoIntegration(),
+                CeleryIntegration(),
+            ],
+            traces_sample_rate=0.1,  # 10% das transações
+            environment=os.environ.get("ENVIRONMENT", "production"),
+            # Filtro de dados sensíveis já é feito pelo SensitiveDataFilter
+        )
+    except ImportError:
+        # Sentry SDK não instalado - usar fallback para banco
+        USE_SENTRY = False
 

@@ -6,21 +6,23 @@ from django.conf import settings
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Company, LegalDocument, User
+from .models import Workspace, LegalDocument, User
 from .serializers import (
-    CompanySerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    WorkspaceSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
     UserSerializer,
 )
-from .services import get_active_legal_document, render_legal_document
+from .services import generate_password_reset_token, get_active_legal_document, render_legal_document, send_password_reset_email
 
 if TYPE_CHECKING:
     from rest_framework.serializers import Serializer
@@ -194,32 +196,35 @@ def update_profile_view(request: Request) -> Response:
 
 
 @extend_schema(
-    summary="Listar Empresas",
-    description="Lista todas as empresas ativas.",
-    tags=["Empresas"],
+    summary="Listar Workspaces",
+    description="Lista todos os workspaces ativos.",
+    tags=["Workspaces"],
     responses={
-        200: OpenApiResponse(description="Lista de empresas"),
+        200: OpenApiResponse(description="Lista de workspaces"),
     },
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def companies_list_view(request: Request) -> Response:
-    """Endpoint para listar empresas ativas.
+def workspaces_list_view(request: Request) -> Response:
+    """Endpoint para listar workspaces ativos.
 
-    Usa cache para melhorar performance (5 minutos).
+    Super admins veem todos os workspaces ativos.
+    Usuários normais veem apenas seu próprio workspace (se tiver).
+    Não usa cache para garantir dados atualizados (pode ser otimizado depois).
     """
-    from apps.core.cache import cache_get_or_set, get_cache_key
+    # Super admins veem todos os workspaces ativos
+    # Usuários normais veem apenas seu próprio workspace
+    if request.user and request.user.is_authenticated and request.user.is_superuser:
+        workspaces = Workspace.objects.filter(is_active=True)
+    elif request.user and request.user.is_authenticated and hasattr(request.user, "workspace") and request.user.workspace:
+        # Usuário normal: apenas seu próprio workspace
+        workspaces = Workspace.objects.filter(id=request.user.workspace.id, is_active=True)
+    else:
+        # Não autenticado: todos os workspaces ativos (para registro, etc)
+        workspaces = Workspace.objects.filter(is_active=True)
 
-    # Cache por 5 minutos
-    cache_key = get_cache_key("companies_list")
-
-    def fetch_companies():
-        companies = Company.objects.filter(is_active=True)
-        serializer = CompanySerializer(companies, many=True)
-        return serializer.data
-
-    data = cache_get_or_set(cache_key, fetch_companies, timeout=300)
-    return Response(data, status=status.HTTP_200_OK)
+    serializer = WorkspaceSerializer(workspaces, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -388,4 +393,130 @@ def legal_privacy_view(request: Request) -> Response:
         {k: v for k, v in result.items() if k != "status"},
         status=result.get("status", status.HTTP_200_OK),
     )
+
+
+@extend_schema(
+    summary="Solicitar Reset de Senha",
+    description="Solicita um link de reset de senha por email. Sempre retorna sucesso genérico para evitar enumeração de emails.",
+    tags=["Autenticação"],
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "email": {"type": "string", "format": "email"},
+            },
+            "required": ["email"],
+        }
+    },
+    responses={
+        200: OpenApiResponse(description="Se o email existe, um link de reset foi enviado. Sempre retorna sucesso genérico."),
+        400: OpenApiResponse(description="Dados inválidos"),
+    },
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def password_reset_request_view(request: Request) -> Response:
+    """Endpoint para solicitar reset de senha.
+
+    Sempre retorna sucesso genérico para evitar enumeração de emails.
+    Se o email existe, envia email com link de reset.
+    """
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data["email"]
+
+    try:
+        # Buscar usuário (sem expor se existe ou não)
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+
+        if user:
+            # Gerar token
+            token = generate_password_reset_token(user)
+
+            # Enviar email
+            try:
+                send_password_reset_email(user, token, request)
+            except Exception as email_error:
+                # Log do erro de email (mas não expor ao usuário)
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"Erro ao enviar email de reset de senha para {user.email}: {email_error}",
+                    exc_info=True,
+                )
+                # Continuar e retornar sucesso genérico mesmo com erro de email
+
+        # Sempre retornar sucesso genérico (segurança)
+        return Response(
+            {
+                "message": "Se o email fornecido estiver cadastrado, você receberá um link para redefinir sua senha.",
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        # Em caso de erro, ainda retornar sucesso genérico
+        # Log do erro será feito pelo ErrorLoggingMiddleware
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(
+            f"Erro ao processar solicitação de reset de senha para {email}: {e}",
+            exc_info=True,
+        )
+        return Response(
+            {
+                "message": "Se o email fornecido estiver cadastrado, você receberá um link para redefinir sua senha.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    summary="Confirmar Reset de Senha",
+    description="Confirma o reset de senha usando o token recebido por email.",
+    tags=["Autenticação"],
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "token": {"type": "string", "format": "uuid"},
+                "new_password": {"type": "string", "minLength": 8},
+            },
+            "required": ["token", "new_password"],
+        }
+    },
+    responses={
+        200: OpenApiResponse(description="Senha redefinida com sucesso"),
+        400: OpenApiResponse(description="Dados inválidos ou token inválido/expirado"),
+    },
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def password_reset_confirm_view(request: Request) -> Response:
+    """Endpoint para confirmar reset de senha."""
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = serializer.save()
+
+        # Opcional: Invalidar todas as sessões JWT do usuário (segurança extra)
+        # Isso pode ser feito invalidando refresh tokens, mas por simplicidade
+        # vamos apenas retornar sucesso
+
+        return Response(
+            {
+                "message": "Senha redefinida com sucesso. Você já pode fazer login com sua nova senha.",
+            },
+            status=status.HTTP_200_OK,
+        )
+    except serializers.ValidationError as e:
+        return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response(
+            {"error": "Erro ao redefinir senha. Tente novamente."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 

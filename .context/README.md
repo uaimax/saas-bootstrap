@@ -8,6 +8,7 @@ Esta pasta contém aprendizados gerais que afetam o projeto como um todo (devops
 - `learnings.md` - Soluções que funcionaram bem
 - `patterns.md` - Padrões identificados
 - `anti-patterns.md` - O que evitar
+- `milestones.md` - **Marcos importantes do projeto** (fases, commits, pushes, freezes)
 
 ## 🎯 Quando Usar
 
@@ -17,6 +18,13 @@ Consulte esta pasta antes de:
 - Configurar ferramentas de desenvolvimento (tmux, etc)
 - Problemas que afetam backend E frontend
 - Configuração de ambiente
+- **SEMPRE consultar `milestones.md` antes de começar trabalho** para entender estado atual
+
+**Documente em `milestones.md` quando:**
+- Concluir uma fase do projeto
+- Fazer commit que muda estrutura significativamente
+- Fazer push importante (versão, freeze)
+- Finalizar funcionalidade crítica
 
 ## 📝 Formato
 
@@ -47,4 +55,6 @@ severity: [low|medium|high|critical]
 ### Referências
 ...
 ```
+
+
 

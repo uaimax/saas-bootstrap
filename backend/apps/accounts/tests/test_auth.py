@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Company
+from apps.accounts.models import Workspace
 
 User = get_user_model()
 
@@ -16,11 +16,11 @@ class AuthenticationTestCase(TestCase):
     def setUp(self) -> None:
         """Configuração inicial."""
         self.client = APIClient()
-        self.company = Company.objects.create(name="Test Company", slug="test-company")
+        self.workspace = Workspace.objects.create(name="Test Workspace", slug="test-workspace")
         self.user = User.objects.create_user(
             email="test@example.com",
             password="testpass123",
-            company=self.company,
+            workspace=self.workspace,
             first_name="Test",
             last_name="User",
         )
@@ -49,15 +49,15 @@ class AuthenticationTestCase(TestCase):
         response = self.client.post("/api/auth/logout/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_register_success_with_company_slug(self) -> None:
-        """Testa registro bem-sucedido com company_slug (convite)."""
+    def test_register_success_with_workspace_slug(self) -> None:
+        """Testa registro bem-sucedido com workspace_slug (convite)."""
         response = self.client.post(
             "/api/auth/register/",
             {
                 "email": "newuser@example.com",
                 "password": "newpass123",
                 "password_confirm": "newpass123",
-                "company_slug": self.company.slug,
+                "workspace_slug": self.workspace.slug,
                 "accepted_terms": True,
                 "accepted_privacy": True,
             },
@@ -65,10 +65,10 @@ class AuthenticationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("user", response.json())
         user = User.objects.get(email="newuser@example.com")
-        self.assertEqual(user.company, self.company)
+        self.assertEqual(user.workspace, self.workspace)
 
-    def test_register_success_auto_create_company(self) -> None:
-        """Testa registro bem-sucedido com criação automática de Company."""
+    def test_register_success_auto_create_workspace(self) -> None:
+        """Testa registro bem-sucedido com criação automática de Workspace."""
         response = self.client.post(
             "/api/auth/register/",
             {
@@ -84,12 +84,12 @@ class AuthenticationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("user", response.json())
         user = User.objects.get(email="newuser@example.com")
-        self.assertIsNotNone(user.company)
-        self.assertEqual(user.company.name, "Empresa de New User")
-        self.assertTrue(user.company.slug.startswith("empresa-de-new-user"))
+        self.assertIsNotNone(user.workspace)
+        self.assertEqual(user.workspace.name, "Workspace de New User")
+        self.assertTrue(user.workspace.slug.startswith("workspace-de-new-user"))
 
-    def test_register_success_with_company_name(self) -> None:
-        """Testa registro bem-sucedido com company_name personalizado."""
+    def test_register_success_with_workspace_name(self) -> None:
+        """Testa registro bem-sucedido com workspace_name personalizado."""
         response = self.client.post(
             "/api/auth/register/",
             {
@@ -98,7 +98,7 @@ class AuthenticationTestCase(TestCase):
                 "password_confirm": "newpass123",
                 "first_name": "New",
                 "last_name": "User",
-                "company_name": "Minha Empresa Personalizada",
+                "workspace_name": "Meu Workspace Personalizado",
                 "accepted_terms": True,
                 "accepted_privacy": True,
             },
@@ -106,9 +106,9 @@ class AuthenticationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("user", response.json())
         user = User.objects.get(email="newuser@example.com")
-        self.assertIsNotNone(user.company)
-        self.assertEqual(user.company.name, "Minha Empresa Personalizada")
-        self.assertTrue(user.company.slug.startswith("minha-empresa-personalizada"))
+        self.assertIsNotNone(user.workspace)
+        self.assertEqual(user.workspace.name, "Meu Workspace Personalizado")
+        self.assertTrue(user.workspace.slug.startswith("meu-workspace-personalizado"))
 
     def test_register_password_mismatch(self) -> None:
         """Testa registro com senhas que não coincidem."""
@@ -149,9 +149,9 @@ class AuthenticationTestCase(TestCase):
         self.assertEqual(self.user.first_name, "Updated")
         self.assertEqual(self.user.last_name, "Name")
 
-    def test_companies_list(self) -> None:
-        """Testa listagem de companies."""
-        response = self.client.get("/api/companies/")
+    def test_workspaces_list(self) -> None:
+        """Testa listagem de workspaces."""
+        response = self.client.get("/api/workspaces/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.json(), list)
 

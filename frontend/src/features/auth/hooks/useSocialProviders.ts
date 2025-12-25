@@ -1,33 +1,22 @@
-/** Hook para buscar e gerenciar providers sociais disponíveis. */
+/** Hook TanStack Query para buscar providers sociais disponíveis. */
 
-import { useState, useEffect } from 'react';
-import { getAvailableProviders } from '@/features/auth/services/socialAuth';
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/config/api";
+import type { SocialProvider } from "../services/socialAuth";
 
-export interface SocialProvider {
-  provider: string;
-  name: string;
-}
-
-export const useSocialProviders = () => {
-  const [providers, setProviders] = useState<SocialProvider[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const available = await getAvailableProviders();
-        setProviders(available);
-      } catch (error) {
-        console.error('Erro ao carregar providers:', error);
-        setProviders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProviders();
-  }, []);
-
-  return { providers, loading };
+/** Query key factory para social providers. */
+export const socialProvidersKeys = {
+  all: ["social-providers"] as const,
+  list: () => [...socialProvidersKeys.all, "list"] as const,
 };
 
+/** Hook para buscar lista de providers sociais disponíveis. */
+export function useSocialProviders() {
+  return useQuery<SocialProvider[], Error>({
+    queryKey: socialProvidersKeys.list(),
+    queryFn: async () => {
+      const response = await apiClient.get<{ providers: SocialProvider[] }>("/auth/providers/");
+      return response.data.providers || [];
+    },
+  });
+}

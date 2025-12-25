@@ -60,33 +60,30 @@ def log_audit(
     from apps.core.models import AuditLog
 
     user = get_current_user()
-    # Tentar obter company (ou tenant para compatibilidade)
-    company = None
+    # Tentar obter workspace
+    workspace = None
     try:
-        # Primeiro tentar company_id (mais seguro, não precisa de query adicional)
-        if hasattr(instance, "company_id") and instance.company_id:
-            from apps.accounts.models import Company
+        # Primeiro tentar workspace_id (mais seguro, não precisa de query adicional)
+        if hasattr(instance, "workspace_id") and instance.workspace_id:
+            from apps.accounts.models import Workspace
             try:
-                company = Company.objects.get(pk=instance.company_id)
-            except (Company.DoesNotExist, ValueError, TypeError):
+                workspace = Workspace.objects.get(pk=instance.workspace_id)
+            except (Workspace.DoesNotExist, ValueError, TypeError):
                 pass
-        # Se não tiver company_id, tentar acessar company diretamente
-        elif hasattr(instance, "company"):
+        # Se não tiver workspace_id, tentar acessar workspace diretamente
+        elif hasattr(instance, "workspace"):
             try:
-                company = getattr(instance, "company", None)
+                workspace = getattr(instance, "workspace", None)
                 # Se for um objeto relacionado, garantir que está carregado
-                if company and hasattr(company, 'pk') and not company.pk:
-                    company = None
+                if workspace and hasattr(workspace, 'pk') and not workspace.pk:
+                    workspace = None
             except Exception:
                 pass
-        # Compatibilidade com tenant
-        elif hasattr(instance, "tenant"):
-            try:
-                company = getattr(instance, "tenant", None)
-            except Exception:
-                pass
+        # Se o usuário for de um workspace específico, usar isso como fallback
+        if not workspace and user and hasattr(user, 'workspace') and user.workspace:
+            workspace = user.workspace
     except Exception:
-        # Se houver qualquer erro ao obter company, continuar sem ela
+        # Se houver qualquer erro ao obter workspace, continuar sem ele
         pass
 
     # Identificar se é dado pessoal
@@ -129,19 +126,19 @@ def log_audit(
         ip_address = get_client_ip(request)
         user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
 
-    # Se company for None mas temos company_id, tentar obter do banco uma última vez
-    if company is None and hasattr(instance, "company_id") and instance.company_id:
+    # Se workspace for None mas temos workspace_id, tentar obter do banco uma última vez
+    if workspace is None and hasattr(instance, "workspace_id") and instance.workspace_id:
         try:
-            from apps.accounts.models import Company
-            company = Company.objects.get(pk=instance.company_id)
-        except (Company.DoesNotExist, ValueError, TypeError):
+            from apps.accounts.models import Workspace
+            workspace = Workspace.objects.get(pk=instance.workspace_id)
+        except (Workspace.DoesNotExist, ValueError, TypeError):
             # Se não conseguir obter, deixar como None (campo permite null)
             pass
 
-    # Criar log (company pode ser None se não conseguir obter - campo permite null)
+    # Criar log (workspace pode ser None se não conseguir obter - campo permite null)
     try:
         log = AuditLog.objects.create(
-            company=company,
+            workspace=workspace,
             user=user,
             action=action,
             model_name=f"{instance.__class__.__module__}.{instance.__class__.__name__}",

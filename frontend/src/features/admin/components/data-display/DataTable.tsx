@@ -1,6 +1,5 @@
-/** Componente de tabela de dados para exibição de listas. */
-
-import { ReactNode } from "react";
+import { ArrowUpDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -8,266 +7,125 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { EmptyState } from "./EmptyState";
-import { LoadingState } from "./LoadingState";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/table"
+import type { TableColumn } from "@/features/admin/hooks/useTable"
+import { cn } from "@/lib/utils"
 
-/**
- * Definição de uma coluna da tabela.
- */
-export interface Column<T> {
-  /** Chave única da coluna (deve corresponder a uma propriedade de T) */
-  key: keyof T | string;
-  /** Label da coluna */
-  label: string;
-  /** Função customizada para renderizar o valor (opcional) */
-  render?: (value: T[keyof T], row: T, index: number) => ReactNode;
-  /** Alinhamento do conteúdo */
-  align?: "left" | "center" | "right";
-  /** Largura da coluna (opcional) */
-  width?: string;
-  /** Classe CSS adicional para células desta coluna */
-  className?: string;
+interface DataTableProps<T> {
+  data: T[]
+  columns: TableColumn<T>[]
+  loading?: boolean
+  onSort?: (key: string) => void
+  sortedColumn?: string | null
+  sortDirection?: "asc" | "desc"
+  rowKey?: (row: T) => string | number
+  onRowClick?: (row: T) => void
 }
 
-export interface DataTableProps<T extends Record<string, any>> {
-  /** Dados da tabela */
-  data: T[];
-  /** Definição das colunas */
-  columns: Column<T>[];
-  /** Estado de carregamento */
-  loading?: boolean;
-  /** Callback quando uma linha é clicada */
-  onRowClick?: (row: T, index: number) => void;
-  /** Habilitar seleção de linhas */
-  selectable?: boolean;
-  /** Linhas selecionadas (controlado) */
-  selectedRows?: T[];
-  /** Callback quando seleção muda */
-  onSelectionChange?: (selected: T[]) => void;
-  /** Função para obter chave única de uma linha */
-  rowKey?: (row: T) => string | number;
-  /** Mensagem quando não há dados */
-  emptyMessage?: string;
-  /** Descrição quando não há dados */
-  emptyDescription?: string;
-  /** Ação quando não há dados */
-  emptyAction?: ReactNode;
-  /** Classe CSS adicional */
-  className?: string;
-}
-
-/**
- * Componente de tabela de dados para exibição de listas.
- * Suporta seleção de linhas, loading state, empty state e renderização customizada.
- *
- * @example
- * <DataTable
- *   data={leads}
- *   columns={[
- *     { key: "name", label: "Nome" },
- *     { key: "email", label: "Email" },
- *     { key: "status", label: "Status", render: (value) => <Badge>{value}</Badge> },
- *   ]}
- *   loading={loading}
- *   selectable
- *   onRowClick={(row) => navigate(`/leads/${row.id}`)}
- * />
- */
 export function DataTable<T extends Record<string, any>>({
   data,
   columns,
   loading = false,
+  onSort,
+  sortedColumn,
+  sortDirection,
+  rowKey = (row: T) => (row.id as string | number) || Math.random(),
   onRowClick,
-  selectable = false,
-  selectedRows = [],
-  onSelectionChange,
-  rowKey,
-  emptyMessage = "Nenhum dado encontrado",
-  emptyDescription,
-  emptyAction,
-  className,
 }: DataTableProps<T>) {
-  // Função para obter chave única de uma linha
-  const getRowKey = (row: T, index: number): string | number => {
-    if (rowKey) {
-      return rowKey(row);
-    }
-    // Tentar usar 'id' se disponível
-    if ("id" in row && typeof row.id === "string" || typeof row.id === "number") {
-      return row.id;
-    }
-    // Fallback para índice
-    return index;
-  };
-
-  // Verificar se uma linha está selecionada
-  const isRowSelected = (row: T, index: number): boolean => {
-    if (!selectable || selectedRows.length === 0) {
-      return false;
-    }
-    const key = getRowKey(row, index);
-    return selectedRows.some((selected) => {
-      const selectedKey = rowKey ? rowKey(selected) : ("id" in selected ? selected.id : null);
-      return selectedKey === key;
-    });
-  };
-
-  // Verificar se todas as linhas estão selecionadas
-  const isAllSelected = (): boolean => {
-    if (!selectable || data.length === 0) {
-      return false;
-    }
-    return data.every((row, index) => isRowSelected(row, index));
-  };
-
-  // Verificar se algumas linhas estão selecionadas (indeterminado)
-  const isIndeterminate = (): boolean => {
-    if (!selectable || data.length === 0) {
-      return false;
-    }
-    const selectedCount = data.filter((row, index) => isRowSelected(row, index)).length;
-    return selectedCount > 0 && selectedCount < data.length;
-  };
-
-  // Handler para selecionar/deselecionar uma linha
-  const handleRowSelect = (row: T, index: number, checked: boolean) => {
-    if (!onSelectionChange) return;
-
-    const key = getRowKey(row, index);
-    const currentSelected = [...selectedRows];
-
-    if (checked) {
-      // Adicionar à seleção se não estiver já selecionada
-      if (!isRowSelected(row, index)) {
-        onSelectionChange([...currentSelected, row]);
-      }
-    } else {
-      // Remover da seleção
-      const filtered = currentSelected.filter((selected) => {
-        const selectedKey = rowKey ? rowKey(selected) : ("id" in selected ? selected.id : null);
-        return selectedKey !== key;
-      });
-      onSelectionChange(filtered);
-    }
-  };
-
-  // Handler para selecionar/deselecionar todas as linhas
-  const handleSelectAll = (checked: boolean) => {
-    if (!onSelectionChange) return;
-
-    if (checked) {
-      onSelectionChange([...data]);
-    } else {
-      onSelectionChange([]);
-    }
-  };
-
-  // Renderizar valor de uma célula
-  const renderCellValue = (column: Column<T>, row: T, index: number): ReactNode => {
-    const value = row[column.key as keyof T];
-
-    if (column.render) {
-      return column.render(value, row, index);
-    }
-
-    // Renderização padrão
-    if (value === null || value === undefined) {
-      return <span className="text-muted-foreground">-</span>;
-    }
-
-    return String(value);
-  };
-
-  // Loading state
   if (loading) {
-    return <LoadingState rows={5} />;
-  }
-
-  // Empty state
-  if (!loading && data.length === 0) {
     return (
-      <EmptyState
-        title={emptyMessage}
-        description={emptyDescription}
-        action={emptyAction}
-      />
-    );
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((col) => (
+                <TableHead key={col.key}>{col.label}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                {columns.map((col) => (
+                  <TableCell key={col.key}>
+                    <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )
   }
 
   return (
-    <div className={cn("rounded-md border", className)}>
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            {selectable && (
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected()}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Selecionar todas as linhas"
-                />
-              </TableHead>
-            )}
-            {columns.map((column) => (
+            {columns.map((col) => (
               <TableHead
-                key={String(column.key)}
+                key={col.key}
                 className={cn(
-                  column.align === "center" && "text-center",
-                  column.align === "right" && "text-right",
-                  column.className
+                  col.sortable && onSort && "cursor-pointer hover:bg-muted/50"
                 )}
-                style={column.width ? { width: column.width } : undefined}
+                onClick={() => col.sortable && onSort?.(col.key)}
               >
-                {column.label}
+                <div className="flex items-center gap-2">
+                  {col.label}
+                  {col.sortable && onSort && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSort(col.key)
+                      }}
+                    >
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {sortedColumn === col.key && (
+                    <span className="text-xs text-muted-foreground">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
               </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, rowIndex) => (
-            <TableRow
-              key={getRowKey(row, rowIndex)}
-              className={cn(
-                onRowClick && "cursor-pointer hover:bg-muted/50",
-                isRowSelected(row, rowIndex) && "bg-muted/50"
-              )}
-              onClick={() => onRowClick?.(row, rowIndex)}
-            >
-              {selectable && (
-                <TableCell
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-12"
-                >
-                  <Checkbox
-                    checked={isRowSelected(row, rowIndex)}
-                    onCheckedChange={(checked) =>
-                      handleRowSelect(row, rowIndex, checked === true)
-                    }
-                    aria-label={`Selecionar linha ${rowIndex + 1}`}
-                  />
-                </TableCell>
-              )}
-              {columns.map((column) => (
-                <TableCell
-                  key={String(column.key)}
-                  className={cn(
-                    column.align === "center" && "text-center",
-                    column.align === "right" && "text-right",
-                    column.className
-                  )}
-                >
-                  {renderCellValue(column, row, rowIndex)}
-                </TableCell>
-              ))}
+          {data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                Nenhum dado encontrado
+              </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            data.map((row) => (
+              <TableRow
+                key={rowKey(row)}
+                className={cn(onRowClick && "cursor-pointer")}
+                onClick={() => onRowClick?.(row)}
+              >
+                {columns.map((col) => (
+                  <TableCell key={col.key}>
+                    {col.render
+                      ? col.render(row[col.key], row)
+                      : String(row[col.key] ?? "")}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }
+
 
 

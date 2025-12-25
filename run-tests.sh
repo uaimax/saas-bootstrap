@@ -20,3 +20,6 @@ pytest "$@"
 # Retorna exit code do pytest
 exit $?
 
+
+
+

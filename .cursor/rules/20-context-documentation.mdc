@@ -25,6 +25,8 @@ A LLM deve documentar automaticamente quando:
 2. **Identifica um padrão** que deve ser seguido ou evitado
 3. **Encontra uma solução** que pode ser reutilizada
 4. **Comete um erro** e o corrige (aprendizado importante)
+5. **Alcança um marco importante** (fase concluída, commit significativo, push importante)
+6. **Congela uma versão** ou finaliza uma etapa crítica do projeto
 
 ## 📝 Processo de Documentação
 
@@ -49,32 +51,48 @@ Se encontrar dificuldade ou erro:
 
 **Documentar automaticamente no `.context/` correto** seguindo este formato:
 
+### 4. Após Alcançar Marco
+
+**Documentar marcos importantes em `.context/milestones.md`** quando:
+- Concluir uma fase do projeto
+- Fazer commit que muda estrutura significativamente
+- Fazer push importante (versão, freeze)
+- Finalizar funcionalidade crítica
+
+**Formato para marcos:**
+
 ```markdown
 ---
 date: YYYY-MM-DD
-category: [backend|frontend|devops|general]
+type: [phase|commit|push|milestone|freeze]
 tags: [tag1, tag2]
-severity: [low|medium|high|critical]
+importance: [low|medium|high|critical]
 ---
 
-## [Título Descritivo]
+## [Título do Marco]
 
-### Contexto
-[O que estava sendo feito]
+### O Que Foi Feito
+[Descrição clara do que foi concluído]
 
-### Problema/Aprendizado
-[Descrição clara]
+### Arquivos Principais
+- `path/to/file1.py` - Descrição
+- `path/to/file2.ts` - Descrição
 
-### Solução
-[Como foi resolvido]
+### Estado Atual
+[Estado do projeto após este marco]
 
-### Lições Aprendidas
-[O que evitar no futuro]
+### Próximos Passos
+[O que vem a seguir, se aplicável]
 
-### Referências
-- Arquivos: `path/to/file.py`
-- Docs: `docs/ARCHITECTURE.md`
+### Notas para Próximas LLMs
+[Informações importantes que outras LLMs precisam saber]
 ```
+
+**Exemplos de marcos:**
+- Conclusão de fase (ex: "Fase 4: Frontend Mínimo ✅")
+- Commit estrutural (ex: "RBAC implementado")
+- Push importante (ex: "v1.0.0 - Bootstrap congelado")
+- Marco de funcionalidade (ex: "Contratos arquiteturais definidos")
 
 ## 📁 Estrutura de Arquivos em Cada `.context/`
 
@@ -105,6 +123,12 @@ Cada pasta `.context/` (backend, frontend, raiz) contém:
 - Quando usar aquela pasta
 - Formato e convenções
 
+### `milestones.md` (apenas em `.context/` raiz)
+- Marcos importantes do projeto
+- Conclusões de fases
+- Commits/pushes significativos
+- Estados do projeto que outras LLMs precisam saber
+
 ## 🔍 Critérios de Severidade
 
 - **critical**: Erros que quebram funcionalidade ou segurança
@@ -124,12 +148,36 @@ Antes de finalizar qualquer tarefa que envolveu aprendizado:
 - [ ] Referências incluídas?
 - [ ] Formato seguido corretamente?
 
+**Se alcançou um marco importante:**
+- [ ] Marco documentado em `.context/milestones.md`?
+- [ ] Tipo correto (phase/commit/push/milestone/freeze)?
+- [ ] Importância correta atribuída?
+- [ ] Estado atual do projeto descrito?
+- [ ] Notas para próximas LLMs incluídas?
+
 ## 🚫 O Que NÃO Documentar
 
 - Informações já em `.cursorrules` ou `docs/`
 - Aprendizados muito específicos (uma linha de código)
 - Informações temporárias ou experimentais
 - Duplicatas de aprendizados já documentados
+
+## 📌 Quando Documentar Marcos (Commits/Pushes)
+
+**SEMPRE documentar em `.context/milestones.md` quando:**
+
+1. **Commit estrutural** - Muda arquitetura, models base, middleware, permissões
+2. **Push de versão** - Tag Git (ex: v1.0.0), release, freeze
+3. **Conclusão de fase** - Fase do projeto finalizada (ex: "Fase 4: Frontend ✅")
+4. **Funcionalidade crítica** - Feature que afeta múltiplos módulos ou estrutura
+5. **Congelamento** - Bootstrap pronto para ser clonado/reutilizado
+
+**NÃO documentar:**
+- Commits de correção de bugs menores
+- Commits de refatoração sem impacto estrutural
+- Pushes de desenvolvimento contínuo sem marco
+
+**Regra de ouro:** Se outra LLM precisaria saber disso para entender o estado atual do projeto, documente.
 
 ## 🔄 Manutenção
 
@@ -157,6 +205,7 @@ Antes de finalizar qualquer tarefa que envolveu aprendizado:
 - Configuração de ambiente, variáveis
 - Scripts e automações gerais
 - Decisões arquiteturais gerais
+- **Marcos do projeto** (sempre em `.context/milestones.md`)
 
 ---
 

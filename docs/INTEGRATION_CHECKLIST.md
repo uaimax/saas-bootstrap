@@ -39,16 +39,16 @@
 
 - [x] Projeto React + Vite + TypeScript criado
 - [x] Tailwind CSS configurado (v3.x)
-- [x] shadcn/ui instalado e configurado
+- [x] Componentes UI instalados e configurados
 - [x] Variável `VITE_API_URL` configurada
 - [x] Cliente HTTP usando `API_URL` do backend (axios com withCredentials)
 - [x] Nunca hardcodar URLs (tudo via variáveis de ambiente)
 - [x] Build configurado (Vite)
-- [x] Tema do shadcn/ui configurado (cores, dark mode com next-themes)
+- [x] Tema configurado (cores, dark mode com next-themes)
 - [x] Autenticação completa (Login/Register)
 - [x] Integração com backend (CORS configurado)
 - [x] React Hook Form + Zod em todos os formulários
-- [x] Componentes seguindo padrões shadcn/ui
+- [x] Componentes seguindo padrões de design
 
 ## 🔗 Como Conectar
 
@@ -89,8 +89,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 ## 📝 Notas
 
 - ✅ Frontend implementado na **Fase 4** (2024-12-23)
-- Stack utilizada: **React 18+ + Vite + TypeScript + shadcn/ui + Tailwind CSS 3.x**
-- shadcn/ui escolhido para **código mínimo** e **flexibilidade máxima**
+- Stack utilizada: **React 18+ + Vite + TypeScript + Tailwind CSS 3.x**
+- Componentes UI customizados para **código mínimo** e **flexibilidade máxima**
 - Backend **100% preparado** e integrado
 - Todas as configurações são **flexíveis** via variáveis de ambiente
 - Migração de "junto" para "separado" será **simples** (só variáveis)

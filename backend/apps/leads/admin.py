@@ -10,25 +10,25 @@ from apps.leads.models import Lead
 class LeadAdmin(admin.ModelAdmin):
     """Admin para modelo Lead."""
 
-    list_display = ["name", "email", "company", "client_company", "status", "source", "created_at"]
-    list_filter = ["status", "source", "company", "created_at"]
-    search_fields = ["name", "email", "client_company", "phone"]
+    list_display = ["name", "email", "workspace", "client_workspace", "status", "source", "created_at"]
+    list_filter = ["status", "source", "workspace", "created_at"]
+    search_fields = ["name", "email", "client_workspace", "phone"]
     readonly_fields = ["created_at", "updated_at"]
     date_hierarchy = "created_at"
 
     fieldsets = (
-        (_("Informações Básicas"), {"fields": ("company", "name", "email", "phone", "client_company")}),
+        (_("Informações Básicas"), {"fields": ("workspace", "name", "email", "phone", "client_workspace")}),
         (_("Status e Origem"), {"fields": ("status", "source")}),
         (_("Observações"), {"fields": ("notes",)}),
         (_("Datas"), {"fields": ("created_at", "updated_at")}),
     )
 
     def get_queryset(self, request):
-        """Filtra leads por company se não for superuser."""
+        """Filtra leads por workspace se não for superuser."""
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        if hasattr(request.user, "company") and request.user.company:
-            return qs.filter(company=request.user.company)
+        if hasattr(request.user, "workspace") and request.user.workspace:
+            return qs.filter(workspace=request.user.workspace)
         return qs.none()
 

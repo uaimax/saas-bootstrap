@@ -1,146 +1,57 @@
-/** Componente de sidebar para navegação lateral. */
+import { useTranslation } from "react-i18next"
+import { Link, useLocation } from "react-router-dom"
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  FileText,
+  ChevronRight
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
-import { ReactNode, useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+export function Sidebar() {
+  const { t } = useTranslation(["common"])
+  const location = useLocation()
 
-export interface NavItem {
-  /** Label do item */
-  label: string;
-  /** Ícone do item (lucide-react) */
-  icon?: ReactNode;
-  /** Link do item */
-  href: string;
-  /** Badge opcional (ex: contador) */
-  badge?: string | number;
-  /** Itens filhos (para submenu) - não implementado na Fase 1 */
-  children?: NavItem[];
-}
-
-export interface SidebarProps {
-  /** Itens do menu */
-  items: NavItem[];
-  /** Estado colapsado (controlado) */
-  collapsed?: boolean;
-  /** Callback quando colapso muda */
-  onCollapse?: (collapsed: boolean) => void;
-  /** Classe CSS adicional */
-  className?: string;
-}
-
-/**
- * Componente de sidebar para navegação lateral.
- * Suporta colapso e destaca item ativo baseado na rota atual.
- *
- * @example
- * <Sidebar
- *   items={[
- *     { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard /> },
- *     { label: "Leads", href: "/dashboard/leads", icon: <Users /> },
- *   ]}
- *   collapsed={collapsed}
- *   onCollapse={setCollapsed}
- * />
- */
-export function Sidebar({
-  items,
-  collapsed: controlledCollapsed,
-  onCollapse,
-  className,
-}: SidebarProps) {
-  const location = useLocation();
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-
-  // Usar estado controlado se fornecido, senão usar interno
-  const collapsed = controlledCollapsed ?? internalCollapsed;
-  const setCollapsed = onCollapse ?? setInternalCollapsed;
-
-  // Persistir estado no localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved !== null && controlledCollapsed === undefined) {
-      setInternalCollapsed(saved === "true");
-    }
-  }, [controlledCollapsed]);
-
-  useEffect(() => {
-    if (controlledCollapsed === undefined) {
-      localStorage.setItem("sidebar-collapsed", String(internalCollapsed));
-    }
-  }, [internalCollapsed, controlledCollapsed]);
-
-  const isActive = (href: string) => {
-    return location.pathname === href || location.pathname.startsWith(href + "/");
-  };
+  const menuItems = [
+    { icon: LayoutDashboard, label: t("common:navigation.dashboard"), path: "/admin/dashboard" },
+    { icon: Users, label: t("common:navigation.leads"), path: "/admin/leads" },
+    { icon: FileText, label: t("common:navigation.documents"), path: "/admin/documents" },
+    { icon: Settings, label: t("common:navigation.settings"), path: "/admin/settings" },
+  ]
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-screen border-r bg-background transition-all duration-300",
-        collapsed ? "w-16" : "w-64",
-        className
-      )}
-    >
-      {/* Header da sidebar */}
-      <div className="flex items-center justify-between p-4 border-b">
-        {!collapsed && (
-          <h2 className="font-semibold text-lg">Admin</h2>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto"
-          aria-label={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+    <aside className="w-64 border-r bg-card">
+      <div className="flex h-full flex-col">
+        <div className="p-6">
+          <h1 className="text-xl font-bold">SaaS Bootstrap</h1>
+        </div>
+        <nav className="flex-1 space-y-1 px-3">
+          {menuItems.map((item) => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.path ||
+              location.pathname.startsWith(item.path + "/")
 
-      {/* Menu items */}
-      <nav className="flex-1 overflow-y-auto p-2">
-        <ul className="space-y-1">
-          {items.map((item, index) => (
-            <li key={index}>
+            return (
               <Link
-                to={item.href}
+                key={item.path}
+                to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  isActive(item.href)
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground",
-                  collapsed && "justify-center"
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
-                title={collapsed ? item.label : undefined}
               >
-                {item.icon && (
-                  <span className={cn("flex-shrink-0", collapsed && "mx-auto")}>
-                    {item.icon}
-                  </span>
-                )}
-                {!collapsed && (
-                  <>
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge !== undefined && (
-                      <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
-                )}
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+                {isActive && <ChevronRight className="ml-auto h-4 w-4" />}
               </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+            )
+          })}
+        </nav>
+      </div>
     </aside>
-  );
+  )
 }
 

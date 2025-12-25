@@ -1,187 +1,195 @@
-/** Página de Configurações Admin usando Admin UI Kit. */
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
+import { MainLayout } from "../components/layout/MainLayout"
+import { Breadcrumbs } from "../components/layout/Breadcrumbs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { useAuthStore } from "@/stores/auth-store"
+import { useWorkspace } from "../hooks/useWorkspace"
+import { WorkspaceSelector } from "../components/layout/TenantSelector"
+import { useToast } from "@/stores/toast-store"
+import { useQueryClient } from "@tanstack/react-query"
+import { apiClient } from "@/config/api"
+import { Save, User, Building2, Bell, Shield } from "lucide-react"
+import { SEO } from "@/components/SEO"
 
-import { LayoutDashboard, Users, Settings } from "lucide-react";
-import { MainLayout } from "@/features/admin/components/layout/MainLayout";
-import { useTenant } from "@/features/admin/hooks/useTenant";
-import { usePermissions } from "@/features/admin/hooks/usePermissions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-
-/**
- * Página de Configurações Admin demonstrando o uso do Admin UI Kit.
- * Mostra informações do tenant, permissões e configurações básicas.
- */
 export default function SettingsPage() {
-  const { tenant, tenantName, tenantId, tenantSlug } = useTenant();
-  const { hasPermission, permissions } = usePermissions();
+  const { t } = useTranslation(["seo"])
+  const user = useAuthStore((state) => state.user)
+  const { workspace, workspaceName } = useWorkspace()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
+    email: user?.email || "",
+  })
 
-  const sidebarItems = [
-    {
-      label: "Dashboard",
-      href: "/admin/dashboard",
-      icon: <LayoutDashboard className="h-4 w-4" />,
-    },
-    {
-      label: "Leads",
-      href: "/admin/leads",
-      icon: <Users className="h-4 w-4" />,
-    },
-    {
-      label: "Configurações",
-      href: "/admin/settings",
-      icon: <Settings className="h-4 w-4" />,
-    },
-  ];
-
-  const breadcrumbs = [
-    { label: "Dashboard", href: "/admin/dashboard" },
-    { label: "Configurações" },
-  ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      setLoading(true)
+      await apiClient.patch("/auth/profile/update/", formData)
+      // Invalidar query de perfil para refetch
+      await queryClient.invalidateQueries({ queryKey: ["auth", "profile"] })
+      toast({
+        title: "Sucesso",
+        description: "Perfil atualizado com sucesso.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.response?.data?.detail || "Erro ao atualizar perfil.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <MainLayout
-      sidebarItems={sidebarItems}
-      title="Configurações"
-      breadcrumbs={breadcrumbs}
-    >
+    <MainLayout>
+      <SEO
+        title={t("seo:settings.title")}
+        description={t("seo:settings.description")}
+        keywords="configurações, perfil, workspace, conta"
+        noindex={true}
+      />
       <div className="space-y-6">
-        {/* Informações do Tenant */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações do Tenant</CardTitle>
-            <CardDescription>Dados do tenant atual</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nome</label>
-                <p className="text-sm font-medium">{tenantName || "N/A"}</p>
+        <div>
+          <h1 className="text-2xl font-bold">Configurações</h1>
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Configurações" },
+            ]}
+          />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Perfil do Usuário */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                <CardTitle>Perfil do Usuário</CardTitle>
               </div>
-              {tenantId && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">ID</label>
-                  <p className="text-sm font-medium">{tenantId}</p>
+              <CardDescription>Atualize suas informações pessoais</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">Nome</Label>
+                  <Input
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, first_name: e.target.value })
+                    }
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Sobrenome</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, last_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                  />
+                </div>
+                <Button type="submit" disabled={loading}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar Alterações
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Informações do Workspace */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                <CardTitle>Workspace</CardTitle>
+              </div>
+              <CardDescription>Informações do seu workspace</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Nome do Workspace</Label>
+                <Input value={workspaceName || "-"} disabled />
+              </div>
+              {workspace && (
+                <>
+                  <div className="space-y-2">
+                    <Label>ID do Workspace</Label>
+                    <Input value={workspace.id.toString()} disabled />
+                  </div>
+                  {workspace.slug && (
+                    <div className="space-y-2">
+                      <Label>Slug</Label>
+                      <Input value={workspace.slug} disabled />
+                    </div>
+                  )}
+                </>
               )}
-              {tenantSlug && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Slug</label>
-                  <p className="text-sm font-medium">{tenantSlug}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Permissões do Usuário */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Permissões do Usuário</CardTitle>
-            <CardDescription>Permissões RBAC do usuário atual</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {permissions.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Total de permissões:</span>
-                  <Badge>{permissions.length}</Badge>
-                </div>
-                <Separator />
-                <div className="flex flex-wrap gap-2">
-                  {permissions.map((perm, index) => (
-                    <Badge key={index} variant="secondary">
-                      {perm}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                Nenhuma permissão configurada. O backend ainda não retorna permissões no objeto User.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Configurações Gerais */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configurações Gerais</CardTitle>
-            <CardDescription>Configurações do sistema</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+              <Separator />
               <div>
-                <p className="text-sm font-medium">Tema</p>
-                <p className="text-sm text-muted-foreground">Alterar tema claro/escuro</p>
+                <Label className="mb-2 block">Trocar Workspace</Label>
+                <WorkspaceSelector />
               </div>
-              <Button variant="outline" size="sm">
-                Configurar
-              </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Notificações</p>
-                <p className="text-sm text-muted-foreground">Gerenciar notificações</p>
-              </div>
-              <Button variant="outline" size="sm">
-                Configurar
-              </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Idioma</p>
-                <p className="text-sm text-muted-foreground">Alterar idioma da interface</p>
-              </div>
-              <Button variant="outline" size="sm">
-                Configurar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Verificação de Permissões */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Teste de Permissões</CardTitle>
-            <CardDescription>Verificação de permissões específicas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">leads.view</span>
-                <Badge variant={hasPermission("leads.view") ? "default" : "secondary"}>
-                  {hasPermission("leads.view") ? "Permitido" : "Negado"}
-                </Badge>
+          {/* Notificações */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                <CardTitle>Notificações</CardTitle>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">leads.create</span>
-                <Badge variant={hasPermission("leads.create") ? "default" : "secondary"}>
-                  {hasPermission("leads.create") ? "Permitido" : "Negado"}
-                </Badge>
+              <CardDescription>Configure suas preferências de notificação</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                As configurações de notificação estarão disponíveis em breve.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Segurança */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <CardTitle>Segurança</CardTitle>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">leads.delete</span>
-                <Badge variant={hasPermission("leads.delete") ? "default" : "secondary"}>
-                  {hasPermission("leads.delete") ? "Permitido" : "Negado"}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">admin.*</span>
-                <Badge variant={hasPermission("admin.*") ? "default" : "secondary"}>
-                  {hasPermission("admin.*") ? "Permitido" : "Negado"}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              <CardDescription>Gerencie sua segurança e privacidade</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                As configurações de segurança estarão disponíveis em breve.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
-  );
+  )
 }
-
-

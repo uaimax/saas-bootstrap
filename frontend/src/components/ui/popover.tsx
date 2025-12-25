@@ -1,29 +1,71 @@
-import * as React from "react"
-import * as PopoverPrimitive from "@radix-ui/react-popover"
+/** Componente Popover usando Headless UI Popover. */
 
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Popover as HeadlessPopover, Transition } from "@headlessui/react";
+import { cn } from "@/lib/utils";
 
-const Popover = PopoverPrimitive.Root
+export interface PopoverProps {
+  children: React.ReactNode;
+}
 
-const PopoverTrigger = PopoverPrimitive.Trigger
+const Popover: React.FC<PopoverProps> = ({ children }) => {
+  return <HeadlessPopover className="relative">{children}</HeadlessPopover>;
+};
+
+const PopoverTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    asChild?: boolean;
+  }
+>(({ asChild, children, className, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <HeadlessPopover.Button as={React.Fragment}>
+        {React.cloneElement(children as React.ReactElement<any>, {
+          ref,
+          ...props,
+        })}
+      </HeadlessPopover.Button>
+    );
+  }
+  return (
+    <HeadlessPopover.Button ref={ref} className={cn(className)} {...props}>
+      {children}
+    </HeadlessPopover.Button>
+  );
+});
+PopoverTrigger.displayName = "PopoverTrigger";
 
 const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
-        className
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-))
-PopoverContent.displayName = PopoverPrimitive.Content.displayName
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    align?: "start" | "end" | "center";
+  }
+>(({ className, align = "start", ...props }, ref) => {
+  return (
+    <Transition
+      as={React.Fragment}
+      enter="transition ease-out duration-200"
+      enterFrom="opacity-0 translate-y-1"
+      enterTo="opacity-100 translate-y-0"
+      leave="transition ease-in duration-150"
+      leaveFrom="opacity-100 translate-y-0"
+      leaveTo="opacity-0 translate-y-1"
+    >
+      <HeadlessPopover.Panel
+        ref={ref}
+        className={cn(
+          "absolute z-50 mt-2 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
+          align === "end" && "right-0",
+          align === "start" && "left-0",
+          align === "center" && "left-1/2 -translate-x-1/2",
+          className
+        )}
+        {...props}
+      />
+    </Transition>
+  );
+});
+PopoverContent.displayName = "PopoverContent";
 
-export { Popover, PopoverTrigger, PopoverContent }
+export { Popover, PopoverTrigger, PopoverContent };

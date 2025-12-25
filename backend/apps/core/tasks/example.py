@@ -16,3 +16,6 @@ def example_task(message: str) -> str:
     print(f"Task executada: {message}")
     return f"Processado: {message}"
 
+
+
+

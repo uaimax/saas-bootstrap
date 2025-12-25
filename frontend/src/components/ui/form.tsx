@@ -1,38 +1,30 @@
-"use client"
-
 import * as React from "react"
-import {
-  Controller,
-  FormProvider,
-  useFormContext,
-  type ControllerProps,
-  type FieldPath,
-  type FieldValues,
-} from "react-hook-form"
-
+import { useFormContext, FormProvider } from "react-hook-form"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
 const Form = FormProvider
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = {
-  name: TName
+interface FormFieldProps {
+  control?: any
+  name: string
+  render: (props: { field: any }) => React.ReactNode
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue | null>(null)
+const FormField = ({
+  name,
+  render,
+}: FormFieldProps) => {
+  const { register } = useFormContext()
+  const field = register(name)
 
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
+    <FormFieldContext.Provider value={{ name }}>
+      <FormItemContext.Provider value={{ id: name }}>
+        <FormItem>
+          {render({ field })}
+        </FormItem>
+      </FormItemContext.Provider>
     </FormFieldContext.Provider>
   )
 }
@@ -52,23 +44,29 @@ const useFormField = () => {
 
   const fieldState = getFieldState(fieldContext.name, formState)
 
-  const { id } = itemContext
-
   return {
-    id,
+    id: itemContext.id,
     name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
+    formItemId: `${itemContext.id}-form-item`,
+    formDescriptionId: `${itemContext.id}-form-item-description`,
+    formMessageId: `${itemContext.id}-form-item-message`,
     ...fieldState,
   }
 }
 
-type FormItemContextValue = {
-  id: string
-}
+const FormFieldContext = React.createContext<
+  | {
+      name: string
+    }
+  | undefined
+>(undefined)
 
-const FormItemContext = React.createContext<FormItemContextValue | null>(null)
+const FormItemContext = React.createContext<
+  | {
+      id: string
+    }
+  | undefined
+>(undefined)
 
 const FormItem = React.forwardRef<
   HTMLDivElement,
@@ -85,8 +83,8 @@ const FormItem = React.forwardRef<
 FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
-  HTMLLabelElement,
-  React.LabelHTMLAttributes<HTMLLabelElement>
+  React.ElementRef<typeof Label>,
+  React.ComponentPropsWithoutRef<typeof Label>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
@@ -104,25 +102,21 @@ FormLabel.displayName = "FormLabel"
 const FormControl = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => {
+>(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
-            id: formItemId,
-            "aria-describedby": !error
-              ? `${formDescriptionId}`
-              : `${formDescriptionId} ${formMessageId}`,
-            "aria-invalid": !!error ? "true" : "false",
-            ...(child.props as any),
-          } as any)
-        }
-        return child
-      })}
-    </>
+    <div
+      ref={ref}
+      id={formItemId}
+      aria-describedby={
+        !error
+          ? `${formDescriptionId}`
+          : `${formDescriptionId} ${formMessageId}`
+      }
+      aria-invalid={!!error}
+      {...props}
+    />
   )
 })
 FormControl.displayName = "FormControl"
@@ -149,7 +143,7 @@ const FormMessage = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : children
+  const body = error ? String(error?.message) : children
 
   if (!body) {
     return null

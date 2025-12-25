@@ -92,7 +92,7 @@ def post_save_handler(sender, instance, created, **kwargs) -> None:
                 if value:
                     # Em testes, executar diretamente. Em produção, usar on_commit
                     if _is_testing():
-                        # Em testes, a instância já foi salva, então podemos acessar company_id diretamente
+                        # Em testes, a instância já foi salva, então podemos acessar workspace_id diretamente
                         log_audit(
                             instance=instance,
                             action=action,

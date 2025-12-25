@@ -1,9 +1,13 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
+export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+export interface AvatarFallbackProps extends React.HTMLAttributes<HTMLDivElement> {}
+
 const Avatar = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  AvatarProps
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
@@ -18,7 +22,7 @@ Avatar.displayName = "Avatar"
 
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
-  React.ImgHTMLAttributes<HTMLImageElement>
+  AvatarImageProps
 >(({ className, ...props }, ref) => (
   <img
     ref={ref}
@@ -30,7 +34,7 @@ AvatarImage.displayName = "AvatarImage"
 
 const AvatarFallback = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  AvatarFallbackProps
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}

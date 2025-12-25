@@ -3,8 +3,8 @@
 from django.conf import settings
 from django.test import TestCase
 
-from apps.accounts.models import Company, User
-from apps.core.middleware import CompanyMiddleware
+from apps.accounts.models import Workspace, User
+from apps.core.middleware import WorkspaceMiddleware
 
 
 class SmokeTestCase(TestCase):
@@ -30,16 +30,16 @@ class SmokeTestCase(TestCase):
         self.assertTrue(hasattr(settings, "JAZZMIN_UI_TWEAKS"))
 
     def test_middleware_is_configured(self) -> None:
-        """Testa se CompanyMiddleware esta configurado."""
-        self.assertIn("apps.core.middleware.CompanyMiddleware", settings.MIDDLEWARE)
+        """Testa se WorkspaceMiddleware esta configurado."""
+        self.assertIn("apps.core.middleware.WorkspaceMiddleware", settings.MIDDLEWARE)
 
     def test_models_can_be_imported(self) -> None:
         """Testa se models principais podem ser importados."""
-        self.assertIsNotNone(Company)
+        self.assertIsNotNone(Workspace)
         self.assertIsNotNone(User)
 
     def test_middleware_can_be_instantiated(self) -> None:
         """Testa se middleware pode ser instanciado."""
-        middleware = CompanyMiddleware(lambda request: None)
+        middleware = WorkspaceMiddleware(lambda request: None)
         self.assertIsNotNone(middleware)
 

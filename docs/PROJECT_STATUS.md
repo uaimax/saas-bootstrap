@@ -27,12 +27,12 @@
 ### Fase 4: Frontend Mínimo ✅
 - ✅ React 18+ + Vite + TypeScript
 - ✅ Tailwind CSS 3.x configurado
-- ✅ shadcn/ui instalado e configurado
+- ✅ Componentes UI instalados e configurados
 - ✅ Autenticação completa (Login/Register)
 - ✅ Integração com backend (CORS configurado)
 - ✅ Dark mode implementado (next-themes)
 - ✅ Páginas: Home, Login, Register, Dashboard
-- ✅ Componentes seguindo padrões shadcn/ui
+- ✅ Componentes seguindo padrões de design
 - ✅ React Hook Form + Zod em todos os formulários
 
 ### LGPD Compliance ✅
@@ -122,7 +122,7 @@ python manage.py seed --tenants 5  # Customizar
 
 ## 🔄 Melhorias Contínuas
 
-- [ ] Adicionar mais componentes shadcn/ui conforme necessário
+- [ ] Adicionar mais componentes UI conforme necessário
 - [ ] Implementar testes E2E
 - [ ] Otimizar bundle size do frontend
 - [ ] Adicionar mais exemplos de módulos

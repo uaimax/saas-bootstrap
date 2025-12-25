@@ -13,4 +13,8 @@ celery>=5.3,<6.0
 redis>=5.0,<6.0
 django-redis>=5.4,<6.0
 python-json-logger>=2.0,<3.0
+requests>=2.31,<3.0
+# Sentry/GlitchTip (opcional) - Descomente se quiser usar Sentry ou GlitchTip para logging
+# GlitchTip é compatível com a API do Sentry, então usa os mesmos SDKs
+# sentry-sdk[django]>=2.0,<3.0
 

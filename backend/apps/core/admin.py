@@ -26,7 +26,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         "is_personal_data",
         "model_name",
         "created_at",
-        "company",
+        "workspace",
     ]
     search_fields = [
         "model_name",
@@ -38,7 +38,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         "ip_address",
     ]
     readonly_fields = [
-        "company",
+        "workspace",
         "user",
         "action",
         "model_name",
@@ -56,7 +56,7 @@ class AuditLogAdmin(admin.ModelAdmin):
     ordering = ["-created_at"]
 
     fieldsets = (
-        (_("Identificação"), {"fields": ("company", "user", "action", "created_at")}),
+        (_("Identificação"), {"fields": ("workspace", "user", "action", "created_at")}),
         (
             _("Objeto Alterado"),
             {"fields": ("model_name", "object_id", "field_name")},
@@ -80,12 +80,12 @@ class AuditLogAdmin(admin.ModelAdmin):
     is_personal_data_badge.short_description = "Dados Pessoais"
 
     def get_queryset(self, request):
-        """Filtra logs por company se não for superuser."""
+        """Filtra logs por workspace se não for superuser."""
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        if hasattr(request.user, "company") and request.user.company:
-            return qs.filter(company=request.user.company)
+        if hasattr(request.user, "workspace") and request.user.workspace:
+            return qs.filter(workspace=request.user.workspace)
         return qs.none()
 
     def has_add_permission(self, request) -> bool:

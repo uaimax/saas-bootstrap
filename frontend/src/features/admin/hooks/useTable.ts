@@ -1,265 +1,117 @@
-/** Hook para gerenciar estado de tabelas de dados com paginação, busca e ordenação. */
+import { useState, useMemo } from "react"
 
-import { useState, useCallback, useEffect } from "react";
-import { apiClient } from "@/config/api";
-import { useTenant } from "./useTenant";
-import { useAuth } from "@/features/auth/AuthContext";
-import { usePagination, type UsePaginationReturn } from "./usePagination";
-
-/**
- * Estado de uma tabela com paginação.
- */
-export interface TableState<T> {
-  /** Dados da tabela */
-  data: T[];
-  /** Estado de carregamento */
-  loading: boolean;
-  /** Erro, se houver */
-  error: string | null;
-  /** Linhas selecionadas */
-  selectedRows: T[];
-  /** Total de itens (para paginação) */
-  totalItems: number;
+export interface TableColumn<T> {
+  key: string
+  label: string
+  render?: (value: any, row: T) => React.ReactNode
+  sortable?: boolean
 }
 
-/**
- * Retorno do hook useTable.
- */
-export interface UseTableReturn<T> extends TableState<T>, UsePaginationReturn {
-  /** Recarrega os dados da tabela */
-  refresh: () => Promise<void>;
-  /** Seleciona uma linha específica */
-  selectRow: (row: T, selected: boolean) => void;
-  /** Seleciona todas as linhas */
-  selectAll: (selected: boolean) => void;
-  /** Limpa a seleção */
-  clearSelection: () => void;
-  /** Termo de busca */
-  search: string;
-  /** Define o termo de busca */
-  setSearch: (search: string) => void;
-  /** Ordenação atual (ex: "name" ou "-created_at") */
-  ordering: string | null;
-  /** Define a ordenação */
-  setOrdering: (ordering: string | null) => void;
-}
-
-/**
- * Opções de configuração do hook useTable.
- */
 export interface UseTableOptions<T> {
-  /** URL da API para buscar dados */
-  endpoint: string;
-  /** Função para transformar dados da API (opcional) */
-  transform?: (data: any) => T[];
-  /** Chave única para identificar linhas (para seleção) */
-  rowKey?: (row: T) => string | number;
-  /** Filtros adicionais para a requisição */
-  filters?: Record<string, any>;
-  /** Recarregar automaticamente quando filters mudarem */
-  autoRefresh?: boolean;
-  /** Campos de busca (para SearchFilter do DRF) */
-  searchFields?: string[];
-  /** Campos de ordenação permitidos */
-  orderingFields?: string[];
-  /** Ordenação padrão */
-  defaultOrdering?: string;
-  /** Tamanho inicial da página */
-  initialPageSize?: number;
+  data: T[]
+  columns: TableColumn<T>[]
+  initialSort?: {
+    key: string
+    direction: "asc" | "desc"
+  }
+  pageSize?: number
 }
 
-/**
- * Hook para gerenciar estado de tabelas com paginação, busca e ordenação.
- * Integra com API, gerencia seleção de linhas e filtro automático por tenant.
- *
- * @param options - Opções de configuração
- * @returns Estado e métodos para gerenciar a tabela
- *
- * @example
- * const { data, loading, refresh, paginationInfo, search, setSearch } = useTable({
- *   endpoint: "/leads/",
- *   rowKey: (row) => row.id,
- *   searchFields: ["name", "email"],
- * });
- */
+export interface UseTableReturn<T> {
+  sortedData: T[]
+  sortedColumn: string | null
+  sortDirection: "asc" | "desc"
+  handleSort: (key: string) => void
+  paginatedData: T[]
+  currentPage: number
+  totalPages: number
+  goToPage: (page: number) => void
+  nextPage: () => void
+  previousPage: () => void
+}
+
 export function useTable<T extends Record<string, any>>(
   options: UseTableOptions<T>
 ): UseTableReturn<T> {
-  const {
-    endpoint,
-    transform,
-    rowKey,
-    filters = {},
-    autoRefresh = true,
-    searchFields = [],
-    orderingFields = [],
-    defaultOrdering,
-    initialPageSize = 25,
-  } = options;
-  const { tenantId } = useTenant();
-  const { user } = useAuth();
+  const { data, columns, initialSort, pageSize = 10 } = options
 
-  const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedRows, setSelectedRows] = useState<T[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [search, setSearch] = useState("");
-  const [ordering, setOrdering] = useState<string | null>(defaultOrdering || null);
+  const [sortedColumn, setSortedColumn] = useState<string | null>(
+    initialSort?.key || null
+  )
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(
+    initialSort?.direction || "asc"
+  )
+  const [currentPage, setCurrentPage] = useState(1)
 
-  // Super admin pode ver todos os dados sem filtro de tenant
-  const isSuperAdmin = user?.is_superuser === true;
+  const sortedData = useMemo(() => {
+    if (!sortedColumn) return data
 
-  // Paginação
-  const pagination = usePagination(totalItems, { initialPageSize });
+    const column = columns.find((col) => col.key === sortedColumn)
+    if (!column || !column.sortable) return data
 
-  const fetchData = useCallback(async () => {
-    // Super admin não precisa de tenantId, usuários normais sim
-    if (!isSuperAdmin && !tenantId) {
-      setLoading(false);
-      return;
+    return [...data].sort((a, b) => {
+      const aValue = a[sortedColumn]
+      const bValue = b[sortedColumn]
+
+      if (aValue === bValue) return 0
+
+      const comparison =
+        typeof aValue === "string" && typeof bValue === "string"
+          ? aValue.localeCompare(bValue)
+          : aValue < bValue
+            ? -1
+            : 1
+
+      return sortDirection === "asc" ? comparison : -comparison
+    })
+  }, [data, sortedColumn, sortDirection, columns])
+
+  const handleSort = (key: string) => {
+    if (sortedColumn === key) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortedColumn(key)
+      setSortDirection("asc")
     }
+    setCurrentPage(1)
+  }
 
-    setLoading(true);
-    setError(null);
+  const totalPages = Math.ceil(sortedData.length / pageSize)
 
-    try {
-      // Construir parâmetros de query
-      const params: Record<string, any> = {
-        ...filters,
-        ...pagination.queryParams,
-      };
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    const end = start + pageSize
+    return sortedData.slice(start, end)
+  }, [sortedData, currentPage, pageSize])
 
-      // Adicionar busca se houver campos de busca configurados
-      if (search && searchFields.length > 0) {
-        params.search = search;
-      }
-
-      // Adicionar ordenação
-      if (ordering) {
-        params.ordering = ordering;
-      }
-
-      const response = await apiClient.get(endpoint, { params });
-
-      // DRF retorna { count, next, previous, results } quando paginado
-      // ou array direto quando não paginado
-      let responseData: T[];
-      let total: number;
-
-      if (response.data.results) {
-        // Resposta paginada
-        responseData = response.data.results;
-        total = response.data.count || 0;
-      } else if (Array.isArray(response.data)) {
-        // Resposta não paginada (array direto)
-        responseData = response.data;
-        total = responseData.length;
-      } else {
-        // Resposta não paginada (objeto único)
-        responseData = [response.data];
-        total = 1;
-      }
-
-      const transformedData = transform ? transform(responseData) : (responseData as T[]);
-
-      setData(transformedData);
-      setTotalItems(total);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        "Erro ao carregar dados";
-      setError(errorMessage);
-      setData([]);
-      setTotalItems(0);
-    } finally {
-      setLoading(false);
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
     }
-  }, [
-    endpoint,
-    transform,
-    tenantId,
-    isSuperAdmin,
-    JSON.stringify(filters),
-    pagination.queryParams,
-    search,
-    ordering,
-    searchFields.length,
-  ]);
+  }
 
-  const refresh = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
-
-  const selectRow = useCallback(
-    (row: T, selected: boolean) => {
-      if (selected) {
-        setSelectedRows((prev) => {
-          // Evitar duplicatas
-          const key = rowKey ? rowKey(row) : JSON.stringify(row);
-          const exists = prev.some((r) => {
-            const rKey = rowKey ? rowKey(r) : JSON.stringify(r);
-            return rKey === key;
-          });
-          return exists ? prev : [...prev, row];
-        });
-      } else {
-        setSelectedRows((prev) => {
-          const key = rowKey ? rowKey(row) : JSON.stringify(row);
-          return prev.filter((r) => {
-            const rKey = rowKey ? rowKey(r) : JSON.stringify(r);
-            return rKey !== key;
-          });
-        });
-      }
-    },
-    [rowKey]
-  );
-
-  const selectAll = useCallback(
-    (selected: boolean) => {
-      if (selected) {
-        setSelectedRows([...data]);
-      } else {
-        setSelectedRows([]);
-      }
-    },
-    [data]
-  );
-
-  const clearSelection = useCallback(() => {
-    setSelectedRows([]);
-  }, []);
-
-  // Resetar para primeira página quando busca ou filtros mudarem
-  useEffect(() => {
-    if (autoRefresh) {
-      pagination.setPage(1);
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
     }
-  }, [search, JSON.stringify(filters), autoRefresh]);
+  }
 
-  // Carregar dados inicialmente e quando dependências mudarem
-  useEffect(() => {
-    if (autoRefresh) {
-      fetchData();
+  const previousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
     }
-  }, [fetchData, autoRefresh]);
+  }
 
   return {
-    data,
-    loading,
-    error,
-    selectedRows,
-    totalItems,
-    refresh,
-    selectRow,
-    selectAll,
-    clearSelection,
-    search,
-    setSearch,
-    ordering,
-    setOrdering,
-    ...pagination,
-  };
+    sortedData,
+    sortedColumn,
+    sortDirection,
+    handleSort,
+    paginatedData,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    previousPage,
+  }
 }

@@ -15,7 +15,9 @@ Ele define contexto, regras, limites e referências para navegação segura.
 1. Este arquivo (`CLAUDE.md`)
 2. `@AGENTS.md` — Agentes especializados
 3. `@docs/context/PROTECTED_AREAS.md` — Áreas proibidas
-4. `ANALYSIS.md` do módulo em que está trabalhando
+4. `@docs/SHARED_VS_CUSTOMIZABLE.md` — Código compartilhado vs customizável (template)
+5. `@docs/contracts/README.md` — Contratos de funcionalidades críticas (ANTES de implementar módulos/forms)
+6. `ANALYSIS.md` do módulo em que está trabalhando
 
 ---
 
@@ -28,7 +30,7 @@ Ele define contexto, regras, limites e referências para navegação segura.
 | **Arquitetura** | Multi-tenancy por `tenant_id` |
 | **Banco Dev** | SQLite |
 | **Banco Prod** | PostgreSQL |
-| **Frontend** | React + Vite + TypeScript + shadcn/ui (Fase 4) |
+| **Frontend** | React + Vite + TypeScript + Tailwind CSS (Fase 4) |
 
 ### Estrutura Principal
 
@@ -40,7 +42,7 @@ saas-bootstrap/
 │   │   ├── core/          # TenantModel, middleware
 │   │   └── accounts/      # User, Tenant
 │   └── api/               # Rotas API
-├── frontend/               # React SPA + shadcn/ui (Fase 4)
+├── frontend/               # React SPA + Tailwind CSS (Fase 4)
 └── docs/                   # Documentação
 ```
 
@@ -53,6 +55,9 @@ saas-bootstrap/
 1. **Ler contexto antes de agir**
    - Ler `ANALYSIS.md` do módulo atual
    - Verificar `@docs/context/PROTECTED_AREAS.md`
+   - Verificar `@docs/SHARED_VS_CUSTOMIZABLE.md` se for template/projeto derivado
+   - Consultar `@docs/contracts/README.md` se for implementar módulos ativáveis ou formulários dinâmicos
+   - Verificar `.context/milestones.md` para entender estado atual do projeto
    - Entender dependências
 
 2. **Usar type hints** em todas as funções Python
@@ -143,12 +148,13 @@ Este repositório usa agentes @007 para tarefas específicas.
 |--------|-------------|
 | `@007architect` | Decisões de arquitetura, novos módulos |
 | `@007backend` | Django, APIs, models, services |
-| `@007frontend` | React, UI, componentes, shadcn/ui |
+| `@007frontend` | React, UI, componentes, Tailwind CSS |
 | `@007security` | Auth, authz, vulnerabilidades |
 | `@007qa` | Testes, validação, cobertura |
 | `@007devops` | Deploy, CI/CD, containers |
 | `@007explorer` | Análise, onboarding, descoberta |
 | `@007docs` | Documentação, README, contexto |
+| `@007creator` | Criar módulos completos (backend + frontend) |
 
 ---
 
@@ -196,7 +202,16 @@ Termos-chave deste projeto — use para validar entendimento:
 ```
 @docs/context/PROTECTED_AREAS.md
 @docs/context/ORCHESTRATION.md
+@docs/SHARED_VS_CUSTOMIZABLE.md
 ```
+
+### Para entender contratos arquiteturais
+```
+@docs/contracts/README.md
+@docs/contracts/MODULE_ACTIVATION.md
+@docs/contracts/DYNAMIC_FORMS.md
+```
+**Importante:** Consultar ANTES de implementar módulos ativáveis ou formulários dinâmicos.
 
 ### Para entender um módulo específico
 ```
@@ -209,6 +224,13 @@ Termos-chave deste projeto — use para validar entendimento:
 ```
 @AGENTS.md
 ```
+
+### Para entender estado atual e marcos
+```
+@.context/milestones.md
+@docs/PROJECT_STATUS.md
+```
+**Importante:** Consultar antes de começar trabalho para entender o que já foi feito.
 
 ---
 
@@ -228,6 +250,59 @@ make migrate
 make makemigrations
 ```
 
+## 🐛 Consulta de Erros no GlitchTip/Sentry
+
+### Quando Consultar Erros
+
+**SEMPRE consulte o GlitchTip/Sentry diretamente quando:**
+- Investigar erros reportados em produção ou desenvolvimento
+- Analisar stack traces e contexto de erros
+- Verificar frequência e padrões de erros
+- Debuggar problemas antes de modificar código
+
+### Como Acessar
+
+1. **Obter URL do GlitchTip**:
+   - Credenciais estão nas variáveis de ambiente (`.env` do backend e frontend)
+   - **Backend**: `SENTRY_DSN` no `.env` do backend (formato: `https://xxx@app.glitchtip.com/14243`)
+   - **Frontend**: `VITE_SENTRY_DSN` no `.env` do frontend (mesmo formato)
+   - Extrair a URL base do DSN para acessar o dashboard
+
+2. **Acessar o Dashboard**:
+   - **SaaS**: `https://app.glitchtip.com` (padrão)
+   - **Self-hosted**: Extrair do DSN (ex: `http://localhost:8000` ou URL customizada)
+   - Credenciais de login estão nas variáveis de ambiente ou documentação
+
+3. **Consultar Erros Específicos**:
+   - Filtrar por projeto (ID está no DSN)
+   - Filtrar por ambiente (`ENVIRONMENT` do backend)
+   - Filtrar por data, nível (ERROR, WARNING), ou mensagem
+   - Ver stack traces completos, contexto do request, breadcrumbs
+
+4. **Verificar Configuração Atual**:
+   ```bash
+   # Backend - Verificar DSN configurado
+   cd backend && cat .env | grep SENTRY_DSN
+
+   # Frontend - Verificar DSN configurado
+   cd frontend && cat .env | grep VITE_SENTRY_DSN
+   ```
+
+5. **Testar Conexão**:
+   ```bash
+   # Backend - Testar envio de erro
+   python manage.py test_glitchtip
+
+   # Ou via script standalone
+   python backend/test_glitchtip_connection.py
+   ```
+
+**⚠️ Importante**:
+- As credenciais (DSN) estão nas `.env` do backend e frontend
+- O DSN contém a URL do GlitchTip e o ID do projeto
+- Use o dashboard para análise detalhada antes de debugar código
+- Consulte `@docs/GLITCHTIP_SETUP.md` para mais detalhes
+
 ---
 
 ## 📚 Referências Externas
@@ -238,15 +313,38 @@ make makemigrations
 
 ---
 
+## 📝 Documentação de Marcos
+
+**SEMPRE documentar marcos importantes em `.context/milestones.md` quando:**
+
+1. **Concluir uma fase** do projeto (ex: "Fase 4: Frontend ✅")
+2. **Fazer commit estrutural** que muda arquitetura, models base, middleware
+3. **Fazer push importante** (versão, tag Git, freeze do bootstrap)
+4. **Finalizar funcionalidade crítica** que afeta múltiplos módulos
+5. **Congelar versão** ou finalizar etapa crítica
+
+**Formato:** Ver `.context/milestones.md` para template completo.
+
+**Regra de ouro:** Se outra LLM precisaria saber disso para entender o estado atual do projeto, documente.
+
+---
+
 ## ⚠️ Lembrete Final
 
 > **Antes de modificar qualquer código, pergunte-se:**
 >
 > 1. Estou em uma zona protegida?
 > 2. Li o ANALYSIS.md deste módulo?
-> 3. Entendo as invariantes?
-> 4. Minhas mudanças seguem as convenções?
-> 5. Preciso de autorização humana?
+> 3. Se for implementar módulos ativáveis ou formulários dinâmicos, li o contrato correspondente?
+> 4. Verifiquei `.context/milestones.md` para entender estado atual?
+> 5. Entendo as invariantes?
+> 6. Minhas mudanças seguem as convenções?
+> 7. Preciso de autorização humana?
+
+> **Após concluir trabalho significativo:**
+>
+> 1. Documentei aprendizado em `.context/` se necessário?
+> 2. Se foi marco importante, documentei em `.context/milestones.md`?
 
 **Em caso de dúvida, PARE e pergunte.**
 

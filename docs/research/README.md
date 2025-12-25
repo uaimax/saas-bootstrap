@@ -50,3 +50,6 @@ O relatório será salvo automaticamente nesta pasta após a conclusão.
 
 Os relatórios são organizados cronologicamente pela data no nome do arquivo, facilitando a busca e referência futura.
 
+
+
+

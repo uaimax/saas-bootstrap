@@ -23,22 +23,24 @@ export const getAvailableProviders = async (): Promise<SocialProvider[]> => {
 /**
  * Inicia o fluxo de autenticação social com um provider.
  * @param provider - Nome do provider (google, github, microsoft, etc.)
- * @param companySlug - Slug da empresa (opcional)
+ * @param workspaceSlug - Slug do workspace (opcional)
  */
-export const initiateSocialLogin = (provider: string, companySlug?: string): void => {
-  // Gerar state com company_slug e nonce para segurança (mantém tenant_slug para compatibilidade)
-  const slug = companySlug || localStorage.getItem('company_id') || localStorage.getItem('tenant_id') || null;
+export const initiateSocialLogin = (provider: string, workspaceSlug?: string): void => {
+  // Gerar state com workspace_slug e nonce para segurança
+  const slug = workspaceSlug || localStorage.getItem('workspace_id') || null;
   const stateData = {
-    company_slug: slug,
-    tenant_slug: slug, // Compatibilidade
+    workspace_slug: slug,
     nonce: crypto.randomUUID(),
   };
 
   const state = btoa(JSON.stringify(stateData));
 
   // Redirecionar para endpoint OAuth do backend
+  // Usa a mesma baseURL do apiClient para garantir consistência
   const apiUrl = import.meta.env.VITE_API_URL || '/api/v1';
-  const redirectUri = `${apiUrl}/auth/social/${provider}/login/?state=${state}`;
+  // Remove trailing slash se existir e adiciona o path
+  const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+  const redirectUri = `${baseUrl}/auth/social/${provider}/login/?state=${state}`;
 
   window.location.href = redirectUri;
 };

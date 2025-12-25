@@ -88,3 +88,47 @@ python manage.py sync_social_apps
 - Docs: `docs/SOCIAL_AUTH.md`
 
 ---
+
+---
+date: 2024-12
+category: general
+tags: [architecture, contracts, yagni, bootstrap]
+severity: high
+---
+
+## Contratos Arquiteturais para Funcionalidades Críticas
+
+### Contexto
+Bootstrap sendo finalizado para servir como base reutilizável para múltiplos MicroSaaS. Dois casos de uso críticos identificados: SaaS modular com módulos ativáveis e SaaS de leads com formulários dinâmicos.
+
+### Solução que Funcionou
+Criar **contratos arquiteturais** que definem estrutura sem implementar (YAGNI). Contratos em `docs/contracts/`:
+- `MODULE_ACTIVATION.md` - Sistema de módulos ativáveis por workspace
+- `DYNAMIC_FORMS.md` - Formulários dinâmicos criados em runtime
+
+**Filosofia**: DEFINIR contratos agora, IMPLEMENTAR depois quando necessário.
+
+**Benefícios:**
+- Evita refatorações estruturais caras depois
+- Permite implementação consistente em produtos derivados
+- Não são código, são especificações arquiteturais
+- Devem ser consultados ANTES de implementar funcionalidades críticas
+
+### Padrão a Replicar
+- Para funcionalidades críticas que afetam estrutura base (models, middleware, permissões)
+- Para funcionalidades que múltiplos produtos derivados precisarão
+- Quando custo de adicionar depois é alto (refatoração estrutural)
+- Sempre documentar estrutura completa (models, helpers, endpoints, exemplos)
+
+### Lições Aprendidas
+- Contratos evitam refatorações estruturais caras
+- Permitem implementação consistente em produtos derivados
+- Não são código, são especificações arquiteturais
+- Devem ser consultados ANTES de implementar funcionalidades críticas
+- Seguir estrutura definida mantém compatibilidade com bootstrap
+
+### Referências
+- Arquivos: `docs/contracts/README.md`, `docs/contracts/MODULE_ACTIVATION.md`, `docs/contracts/DYNAMIC_FORMS.md`
+- Docs: `CLAUDE.md` (hierarquia de leitura), `.cursorrules` (referência rápida)
+
+---

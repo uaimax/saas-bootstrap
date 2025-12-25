@@ -12,7 +12,7 @@ class CacheMixin:
     """Mixin para adicionar cache em ViewSets.
 
     Exemplo de uso:
-        class MyViewSet(CacheMixin, CompanyViewSet):
+        class MyViewSet(CacheMixin, WorkspaceViewSet):
             cache_timeout = 300  # 5 minutos
             cache_actions = ['list', 'retrieve']  # Apenas estas ações
 
@@ -38,8 +38,8 @@ class CacheMixin:
         if action and action in self.cache_actions:
             from apps.core.cache import get_cache_key
 
-            company = getattr(request, "company", None)
-            company_id = str(company.id) if company else None
+            workspace = getattr(request, "workspace", None)
+            workspace_id = str(workspace.id) if workspace else None
 
             # Gerar chave única baseada na URL e parâmetros
             cache_key_parts = [
@@ -50,7 +50,7 @@ class CacheMixin:
             ]
             cache_key = get_cache_key(
                 ":".join(cache_key_parts),
-                company_id=company_id,
+                workspace_id=workspace_id,
             )
 
             # Tentar obter do cache

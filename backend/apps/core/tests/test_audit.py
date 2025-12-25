@@ -3,7 +3,7 @@
 from django.db import transaction
 from django.test import TestCase, TransactionTestCase
 
-from apps.accounts.models import Company, User
+from apps.accounts.models import Workspace, User
 from apps.core.audit import set_current_user
 from apps.core.models import AuditLog
 from apps.leads.models import Lead
@@ -14,11 +14,11 @@ class AuditLogTestCase(TransactionTestCase):
 
     def setUp(self) -> None:
         """Configuração inicial."""
-        self.company = Company.objects.create(name="Test Company", slug="test-company")
+        self.workspace = Workspace.objects.create(name="Test Workspace", slug="test-workspace")
         self.user = User.objects.create_user(
             email="test@example.com",
             password="pass123",
-            company=self.company,
+            workspace=self.workspace,
             first_name="Test",
             last_name="User",
         )
@@ -29,7 +29,7 @@ class AuditLogTestCase(TransactionTestCase):
 
         # Criar lead (sem transação atômica para permitir que signals executem)
         lead = Lead.objects.create(
-            company=self.company,
+            workspace=self.workspace,
             name="Test Lead",
             email="test@example.com",
         )
@@ -52,7 +52,7 @@ class AuditLogTestCase(TransactionTestCase):
 
         # Criar lead
         lead = Lead.objects.create(
-            company=self.company,
+            workspace=self.workspace,
             name="Test Lead",
             email="old@example.com",
         )
@@ -82,7 +82,7 @@ class AuditLogTestCase(TransactionTestCase):
         set_current_user(self.user)
 
         lead = Lead.objects.create(
-            company=self.company,
+            workspace=self.workspace,
             name="Test Lead",
             email="test@example.com",
         )
@@ -93,7 +93,7 @@ class AuditLogTestCase(TransactionTestCase):
 
         self.assertIsNotNone(log)
         self.assertEqual(log.user, self.user)
-        self.assertEqual(log.company, self.company)
+        self.assertEqual(log.workspace, self.workspace)
 
     def test_audit_log_identifies_personal_data(self) -> None:
         """Testa identificação de dados pessoais."""
@@ -101,7 +101,7 @@ class AuditLogTestCase(TransactionTestCase):
 
         # Testar campo email
         lead = Lead.objects.create(
-            company=self.company,
+            workspace=self.workspace,
             name="Test",
             email="john@example.com",
         )
@@ -118,7 +118,7 @@ class AuditLogTestCase(TransactionTestCase):
         set_current_user(self.user)
 
         lead = Lead.objects.create(
-            company=self.company,
+            workspace=self.workspace,
             name="John Doe",
             email="john@example.com",
         )

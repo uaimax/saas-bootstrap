@@ -18,7 +18,7 @@
 - `backend/config/settings/base.py` - Configuração de `CACHES`
 - `backend/requirements.txt` - Adicionado `django-redis>=5.4,<6.0`
 - `backend/apps/accounts/views.py` - Cache implementado em:
-  - `companies_list_view` (5 minutos)
+  - `workspaces_list_view` (5 minutos)
   - `legal_terms_view` (1 hora)
   - `legal_privacy_view` (1 hora)
 
@@ -40,7 +40,7 @@ CACHE_DEFAULT_TIMEOUT=300
 ### 2. ✅ Rate Limiting (DRF Throttling)
 
 **Arquivos criados:**
-- `backend/apps/core/throttles.py` - `CompanyRateThrottle` customizado
+- `backend/apps/core/throttles.py` - `WorkspaceRateThrottle` customizado
 
 **Arquivos modificados:**
 - `backend/config/settings/base.py` - Throttling configurado no `REST_FRAMEWORK`
@@ -48,7 +48,7 @@ CACHE_DEFAULT_TIMEOUT=300
 **Características:**
 - ✅ Throttling nativo do DRF
 - ✅ Limites padrão: 100/hora (anônimos), 1000/hora (autenticados)
-- ✅ `CompanyRateThrottle` para isolamento por tenant
+- ✅ `WorkspaceRateThrottle` para isolamento por tenant
 - ✅ Configurável via variáveis de ambiente
 
 **Variáveis de ambiente:**
@@ -120,4 +120,7 @@ LOG_FORMAT=text         # 'text' ou 'json'
 ---
 
 **Status Final:** ✅ Todos os sistemas estruturais implementados e funcionando!
+
+
+
 

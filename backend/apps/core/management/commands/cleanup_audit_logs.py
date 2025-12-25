@@ -119,3 +119,6 @@ class Command(BaseCommand):
         # Estimativa: ~500 bytes por log em média
         return round((count * 500) / (1024 * 1024), 2)
 
+
+
+

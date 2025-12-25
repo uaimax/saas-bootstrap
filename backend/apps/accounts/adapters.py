@@ -10,33 +10,32 @@ from django.core.cache import cache
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Company
+from .models import Workspace
 
 
-class CompanySocialAccountAdapter(DefaultSocialAccountAdapter):
-    """Adapter que associa usuários sociais a companies durante OAuth."""
+class WorkspaceSocialAccountAdapter(DefaultSocialAccountAdapter):
+    """Adapter que associa usuários sociais a workspaces durante OAuth."""
 
     def pre_social_login(self, request, sociallogin):
-        """Associa usuário à company antes de completar login."""
-        company = getattr(request, "company", None) or getattr(request, "tenant", None)  # Compatibilidade
+        """Associa usuário ao workspace antes de completar login."""
+        workspace = getattr(request, "workspace", None)
 
-        # Se não há company no request, tentar extrair do state parameter
-        if not company:
+        # Se não há workspace no request, tentar extrair do state parameter
+        if not workspace:
             state = request.GET.get("state")
             if state:
                 try:
                     decoded_state = base64.b64decode(state).decode("utf-8")
                     state_data = json.loads(decoded_state)
-                    company_slug = state_data.get("company_slug") or state_data.get("tenant_slug")  # Compatibilidade
+                    workspace_slug = state_data.get("workspace_slug") or state_data.get("tenant_slug")  # Compatibilidade com versões antigas
 
-                    if company_slug:
+                    if workspace_slug:
                         try:
-                            company = Company.objects.get(slug=company_slug, is_active=True)
-                            request.company = company
-                            request.tenant = company  # Compatibilidade
-                        except Company.DoesNotExist:
+                            workspace = Workspace.objects.get(slug=workspace_slug, is_active=True)
+                            request.workspace = workspace
+                        except Workspace.DoesNotExist:
                             raise ImmediateHttpResponse(
-                                HttpResponseBadRequest("Empresa não encontrada ou inativa.")
+                                HttpResponseBadRequest("Workspace não encontrado ou inativo.")
                             )
 
                     # Validar nonce para prevenir replay attacks
@@ -53,34 +52,37 @@ class CompanySocialAccountAdapter(DefaultSocialAccountAdapter):
                     # State inválido, mas não bloquear - pode ser de outro fluxo
                     pass
 
-        # Se ainda não há company, não bloquear mas registrar warning
-        if not company:
+        # Se ainda não há workspace, não bloquear mas registrar warning
+        if not hasattr(request, 'workspace') or not request.workspace:
             # Em produção, pode querer bloquear aqui
-            # Por enquanto, permitir mas sem associar company
+            # Por enquanto, permitir mas sem associar workspace
             return
 
-        # Se usuário já existe, verificar se pertence à company
+        # Se usuário já existe, verificar se pertence ao workspace
         if sociallogin.is_existing:
             user = sociallogin.user
-            if user.company_id and user.company_id != company.id:
+            workspace = getattr(request, 'workspace', None)
+            if user.workspace_id and workspace and user.workspace_id != workspace.id:
                 raise ImmediateHttpResponse(
                     HttpResponseForbidden(
-                        "Usuário não pertence a esta empresa. "
+                        "Usuário não pertence a este workspace. "
                         "Por favor, use a conta correta ou entre em contato com o suporte."
                     )
                 )
 
-        # Associar company ao usuário
-        sociallogin.user.company = company
+        # Associar workspace ao usuário
+        workspace = getattr(request, 'workspace', None)
+        if workspace:
+            sociallogin.user.workspace = workspace
 
     def save_user(self, request, sociallogin, form=None):
-        """Garante que company seja salva com o usuário."""
+        """Garante que workspace seja salvo com o usuário."""
         user = super().save_user(request, sociallogin, form)
 
-        # Associar company se disponível
-        company = getattr(request, "company", None) or getattr(request, "tenant", None)  # Compatibilidade
-        if company:
-            user.company = company
+        # Associar workspace se disponível
+        workspace = getattr(request, "workspace", None)
+        if workspace:
+            user.workspace = workspace
             user.save()
 
         return user

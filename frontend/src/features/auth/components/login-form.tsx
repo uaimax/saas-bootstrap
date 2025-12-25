@@ -1,18 +1,12 @@
-/** Componente de formulário de login (login-05) do shadcn/ui. */
-
-import { GalleryVerticalEnd } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { useState } from "react"
-import { useAuth } from "@/features/auth/AuthContext"
-import { useSocialProviders } from "@/features/auth/hooks/useSocialProviders"
-import { cn } from "@/lib/utils"
+import { useNavigate, Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import { useLoginMutation } from "../hooks/use-auth-queries"
+import { useToast } from "@/stores/toast-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { SocialButton } from "@/components/ui/social-button"
 import {
   Form,
   FormControl,
@@ -21,24 +15,26 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSocialProviders } from "../hooks/useSocialProviders"
+import { SocialButton } from "@/components/ui/social-button"
+import { getZodMessages } from "@/i18n/zod"
 
-const loginSchema = z.object({
-  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
-  password: z.string().min(1, "Senha é obrigatória"),
-})
-
-type LoginFormValues = z.infer<typeof loginSchema>
-
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const { providers, loading: providersLoading } = useSocialProviders()
+export function LoginForm() {
+  const { t } = useTranslation(["auth", "common"])
   const navigate = useNavigate()
+  const loginMutation = useLoginMutation()
+  const { toast } = useToast()
+  const { data: providers = [], isLoading: providersLoading } = useSocialProviders()
+
+  // Criar schema dentro do componente para ter acesso às traduções
+  const zodMessages = getZodMessages()
+  const loginSchema = z.object({
+    email: z.string().email(zodMessages.invalidEmail()).min(1, zodMessages.required()),
+    password: z.string().min(1, zodMessages.required()),
+  })
+
+  type LoginFormValues = z.infer<typeof loginSchema>
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -48,122 +44,103 @@ export function LoginForm({
     },
   })
 
-  async function onSubmit(values: LoginFormValues) {
-    setError(null)
-    setLoading(true)
-
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(values.email, values.password)
-      navigate("/dashboard")
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Erro ao fazer login. Tente novamente.")
-    } finally {
-      setLoading(false)
+      await loginMutation.mutateAsync({ email: data.email, password: data.password })
+      toast({
+        title: t("auth:toasts.login_success"),
+        variant: "default",
+      })
+      navigate("/admin/dashboard")
+    } catch (error: any) {
+      toast({
+        title: t("auth:toasts.login_error"),
+        description: error.response?.data?.detail || error.message || t("auth:messages.invalid_credentials"),
+        variant: "destructive",
+      })
     }
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col items-center gap-2">
-              <Link
-                to="/"
-                className="flex flex-col items-center gap-2 font-medium"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                  <GalleryVerticalEnd className="size-6" />
-                </div>
-                <span className="sr-only">SaaS Bootstrap</span>
-              </Link>
-              <h1 className="text-xl font-bold">Bem-vindo ao SaaS Bootstrap</h1>
-              <div className="text-center text-sm">
-                Não tem uma conta?{" "}
-                <Link to="/register" className="underline underline-offset-4">
-                  Criar conta
-                </Link>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{t("auth:title.login")}</CardTitle>
+        <CardDescription>{t("auth:descriptions.login")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("auth:fields.email")}</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="seu@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>{t("auth:fields.password")}</FormLabel>
+                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                      {t("auth:links.forgot_password")}
+                    </Link>
+                  </div>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || loginMutation.isPending}>
+              {form.formState.isSubmitting || loginMutation.isPending
+                ? t("auth:loading.logging_in")
+                : t("auth:buttons.login")}
+            </Button>
+          </form>
+        </Form>
+
+        {!providersLoading && providers.length > 0 && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  {t("auth:links.or_continue_with")}
+                </span>
               </div>
             </div>
-            <div className="flex flex-col gap-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="m@example.com"
-                        disabled={loading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        disabled={loading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
+            <div className="space-y-2">
+              {providers.map((provider) => (
+                <SocialButton
+                  key={provider.provider}
+                  provider={provider.provider}
+                  name={provider.name}
+                />
+              ))}
             </div>
-            {!providersLoading && providers.length > 0 && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Ou
-                    </span>
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {providers.map((provider) => (
-                    <SocialButton
-                      key={provider.provider}
-                      provider={provider.provider}
-                      name={provider.name}
-                      disabled={loading}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </form>
-      </Form>
-      <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        Ao continuar, você concorda com nossos <a href="#">Termos de Serviço</a>{" "}
-        e <a href="#">Política de Privacidade</a>.
-      </div>
-    </div>
+          </>
+        )}
+
+        <div className="mt-4 text-center text-sm">
+          <span className="text-muted-foreground">{t("auth:links.no_account")} </span>
+          <Link to="/register" className="text-primary hover:underline">
+            {t("auth:links.register")}
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

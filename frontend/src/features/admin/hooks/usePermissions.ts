@@ -1,6 +1,6 @@
 /** Hook para verificar permissões RBAC de forma centralizada. */
 
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuth } from "@/stores/auth-store";
 import { checkPermission, hasAnyPermission, hasAllPermissions, type Permission, type PermissionSet } from "@/lib/admin/rbac";
 
 /**
@@ -59,5 +59,3 @@ export function usePermissions(): UsePermissionsReturn {
     permissions: userPermissions,
   };
 }
-
-

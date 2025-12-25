@@ -1,216 +1,208 @@
-/** Componente genérico para criação/edição de recursos (similar ao Django Admin add_view/change_view). */
+import { useEffect, useState, useRef } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useNavigate, useParams } from "react-router-dom"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { MainLayout } from "../layout/MainLayout"
+import { Breadcrumbs } from "../layout/Breadcrumbs"
+import { FormField } from "../forms/FormField"
+import { SubmitButton } from "../forms/SubmitButton"
+import { useResource } from "@/features/admin/hooks/useResource"
+import { createResourceSchema } from "@/lib/admin/resource-config"
+import type { ResourceConfig } from "@/lib/admin/resource-config"
+import { useToast } from "@/stores/toast-store"
+import { Form } from "@/components/ui/form"
 
-import { useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { LayoutDashboard, ArrowLeft } from "lucide-react";
-import { MainLayout } from "@/features/admin/components/layout/MainLayout";
-import { FormField } from "@/features/admin/components/forms/FormField";
-import { SubmitButton } from "@/features/admin/components/forms/SubmitButton";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useResource } from "@/features/admin/hooks/useResource";
-import type { ResourceConfig } from "@/lib/admin/resource-config";
-
-export interface ResourceFormPageProps<T extends Record<string, any>> {
-  /** Configuração do recurso */
-  config: ResourceConfig<T>;
-  /** ID do recurso (se edição) */
-  id?: string | number;
-  /** Ícone para sidebar */
-  sidebarIcon?: React.ReactNode;
-  /** Itens adicionais da sidebar */
-  additionalSidebarItems?: Array<{
-    label: string;
-    href: string;
-    icon?: React.ReactNode;
-  }>;
+interface ResourceFormPageProps<T extends Record<string, any>> {
+  config: ResourceConfig<T>
 }
 
-/**
- * Componente genérico para criação/edição de recursos.
- * Similar ao Django Admin add_view/change_view, mas configurável.
- *
- * @example
- * <ResourceFormPage config={leadResource} />
- */
 export function ResourceFormPage<T extends Record<string, any>>({
   config,
-  id,
-  sidebarIcon,
-  additionalSidebarItems = [],
 }: ResourceFormPageProps<T>) {
-  const navigate = useNavigate();
-  const params = useParams<{ id?: string }>();
-  const [searchParams] = useSearchParams();
-  const isEdit = Boolean(id) || Boolean(params.id) || searchParams.get("edit") === "true";
-  const resourceId = id || params.id || searchParams.get("id");
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const isEditing = !!id
+  const { toast } = useToast()
 
-  const {
-    form,
-    create,
-    get,
-    update,
-    canCreate,
-    canUpdate,
-    goToList,
-  } = useResource<T>(config);
+  // skipInitialFetch: true para não buscar todos os itens, só o específico quando editando
+  const { getItem, create, update } = useResource<T>({
+    resource: config,
+    basePath: config.endpoint,
+    skipInitialFetch: true,
+  })
 
-  // Carregar dados se for edição
+  const schema = createResourceSchema(config.fields)
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {} as any,
+  })
+
+  const [loadingItem, setLoadingItem] = useState(false)
+  const hasFetchedRef = useRef<string | null>(null)
+  const isResettingRef = useRef(false)
+  const formInitializedRef = useRef(false)
+
+  // Buscar item específico quando estiver editando
+  // IMPORTANTE: Só executar uma vez por ID
   useEffect(() => {
-    if (isEdit && resourceId) {
-      const loadData = async () => {
-        try {
-          const data = await get(resourceId);
-          // Reset form com dados carregados
-          const formData: Record<string, any> = {};
-          config.fields.forEach((field) => {
-            // Mapear valor do backend para o formulário
-            // Se o campo existe no data, usar o valor (mesmo que seja falsy como 0, false, "")
-            // Se não existe, usar valor padrão baseado no tipo
-            if (field.name in data) {
-              const value = data[field.name];
-              // Para campos opcionais, permitir null/undefined
-              if (value === null || value === undefined) {
-                formData[field.name] = field.required ? "" : undefined;
-              } else {
-                formData[field.name] = value;
-              }
-            } else {
-              // Campo não existe no data, usar valor padrão
-              formData[field.name] = field.required ? "" : undefined;
+    // Se não estiver editando, limpar refs e não fazer nada
+    if (!isEditing || !id) {
+      hasFetchedRef.current = null
+      isResettingRef.current = false
+      formInitializedRef.current = false
+      return
+    }
+
+    // Se já buscou este ID específico, não buscar novamente
+    if (hasFetchedRef.current === id && formInitializedRef.current) {
+      return
+    }
+
+    // Marcar que está buscando
+    hasFetchedRef.current = id
+    isResettingRef.current = true
+    formInitializedRef.current = false
+    setLoadingItem(true)
+
+    getItem(id)
+      .then((item) => {
+        // Só resetar se ainda for o mesmo ID e não estiver resetando
+        if (hasFetchedRef.current === id && isResettingRef.current) {
+          // Usar setTimeout para garantir que o reset acontece após o render
+          setTimeout(() => {
+            if (hasFetchedRef.current === id && isResettingRef.current) {
+              form.reset(item as any, { keepDefaultValues: false })
+              formInitializedRef.current = true
+              isResettingRef.current = false
             }
-          });
-          form.reset(formData);
-        } catch (error: any) {
-          console.error("Erro ao carregar dados:", error);
+          }, 0)
         }
-      };
-      loadData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit, resourceId]);
+      })
+      .catch((error) => {
+        console.error("Erro ao carregar item:", error)
+        isResettingRef.current = false
+        formInitializedRef.current = false
+        toast({
+          title: "Erro",
+          description: error.message || "Não foi possível carregar o item para edição.",
+          variant: "destructive",
+        })
+      })
+      .finally(() => {
+        // Só atualizar loading se ainda for o mesmo ID
+        if (hasFetchedRef.current === id) {
+          // Dar um pequeno delay para garantir que o reset foi aplicado
+          setTimeout(() => {
+            if (hasFetchedRef.current === id) {
+              setLoadingItem(false)
+            }
+          }, 100)
+        }
+      })
+  // Dependências mínimas - só id importa
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (data: any) => {
     try {
-      if (isEdit && resourceId) {
-        await update(resourceId, values);
+      if (isEditing) {
+        await update(id!, data)
+        toast({
+          title: "Sucesso",
+          description: `${config.name} atualizado com sucesso.`,
+        })
       } else {
-        await create(values);
+        await create(data)
+        toast({
+          title: "Sucesso",
+          description: `${config.name} criado com sucesso.`,
+        })
       }
-      goToList();
+      navigate(-1)
     } catch (error: any) {
-      console.error("Erro ao salvar:", error);
-      if (error.response?.data) {
-        Object.keys(error.response.data).forEach((key) => {
-          form.setError(key as any, {
-            message: error.response.data[key][0],
-          });
-        });
-      }
+      toast({
+        title: "Erro",
+        description: error.message || `Erro ao salvar ${config.name}.`,
+        variant: "destructive",
+      })
     }
-  };
-
-  // Sidebar items
-  const sidebarItems = [
-    {
-      label: "Dashboard",
-      href: "/admin/dashboard",
-      icon: <LayoutDashboard className="h-4 w-4" />,
-    },
-    {
-      label: config.listTitle || config.namePlural.charAt(0).toUpperCase() + config.namePlural.slice(1),
-      href: `/admin/${config.namePlural}`,
-      icon: sidebarIcon || <LayoutDashboard className="h-4 w-4" />,
-    },
-    ...additionalSidebarItems,
-  ];
-
-  // Breadcrumbs
-  const breadcrumbs = [
-    { label: "Dashboard", href: "/admin/dashboard" },
-    {
-      label: config.listTitle || config.namePlural.charAt(0).toUpperCase() + config.namePlural.slice(1),
-      href: `/admin/${config.namePlural}`,
-    },
-    { label: isEdit ? config.editTitle || `Editar ${config.name}` : config.createTitle || `Novo ${config.name}` },
-  ];
-
-  // Verificar permissão
-  if (isEdit && !canUpdate) {
-    return (
-      <MainLayout sidebarItems={sidebarItems} breadcrumbs={breadcrumbs}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-            <CardDescription>Você não tem permissão para editar {config.namePlural}.</CardDescription>
-          </CardHeader>
-        </Card>
-      </MainLayout>
-    );
   }
 
-  if (!isEdit && !canCreate) {
-    return (
-      <MainLayout sidebarItems={sidebarItems} breadcrumbs={breadcrumbs}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-            <CardDescription>Você não tem permissão para criar {config.namePlural}.</CardDescription>
-          </CardHeader>
-        </Card>
-      </MainLayout>
-    );
-  }
+  const title = isEditing
+    ? config.editTitle || `Editar ${config.name}`
+    : config.createTitle || `Criar ${config.name}`
 
   return (
-    <MainLayout
-      sidebarItems={sidebarItems}
-      title={isEdit ? config.editTitle || `Editar ${config.name}` : config.createTitle || `Novo ${config.name}`}
-      breadcrumbs={breadcrumbs}
-    >
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>
-            {isEdit ? config.editTitle || `Editar ${config.name}` : config.createTitle || `Criar ${config.name}`}
-          </CardTitle>
-          <CardDescription>
-            {isEdit
-              ? `Atualize as informações do ${config.name} abaixo`
-              : `Preencha os dados do ${config.name} abaixo`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {config.fields.map((field) => (
-                <FormField
-                  key={field.name}
-                  control={form.control}
-                  name={field.name as any}
-                  label={field.label}
-                  type={field.type || "text"}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  description={field.description}
-                  options={field.options}
-                />
-              ))}
+    <MainLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{title}</h1>
+            <Breadcrumbs
+              items={[
+                { label: "Dashboard", href: "/admin/dashboard" },
+                { label: config.listTitle || config.namePlural, href: config.endpoint },
+                { label: isEditing ? "Editar" : "Criar" },
+              ]}
+            />
+          </div>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
 
-              <div className="flex gap-2 pt-4">
-                <SubmitButton loading={form.formState.isSubmitting}>
-                  {isEdit ? "Salvar Alterações" : "Criar"}
-                </SubmitButton>
-                <Button type="button" variant="outline" onClick={goToList}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>
+              {isEditing
+                ? `Edite as informações do ${config.name} abaixo.`
+                : `Preencha os campos para criar um novo ${config.name}.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingItem ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Carregando...</p>
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {config.fields.map((field) => (
+                  <FormField
+                    key={field.name}
+                    control={form.control}
+                    name={field.name as any}
+                    label={field.label}
+                    type={field.type || "text"}
+                    placeholder={field.placeholder}
+                    description={field.description}
+                    required={field.required}
+                    options={field.options}
+                  />
+                ))}
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate(-1)}
+                  >
+                    Cancelar
+                  </Button>
+                  <SubmitButton loading={form.formState.isSubmitting}>
+                    {isEditing ? "Atualizar" : "Criar"}
+                  </SubmitButton>
+                </div>
+              </form>
+            </Form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </MainLayout>
-  );
+  )
 }
-

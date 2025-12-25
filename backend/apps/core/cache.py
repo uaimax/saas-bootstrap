@@ -6,20 +6,20 @@ from django.core.cache import cache
 from django.core.cache.backends.base import BaseCache
 
 
-def get_cache_key(prefix: str, *args, company_id: Optional[str] = None) -> str:
-    """Gera chave de cache com prefixo e company_id.
+def get_cache_key(prefix: str, *args, workspace_id: Optional[str] = None) -> str:
+    """Gera chave de cache com prefixo e workspace_id.
 
     Args:
         prefix: Prefixo da chave (ex: 'user_profile')
         *args: Argumentos adicionais para a chave
-        company_id: ID da company (opcional, para isolamento multi-tenant)
+        workspace_id: ID do workspace (opcional, para isolamento multi-tenant)
 
     Returns:
-        Chave de cache formatada: 'prefix:company_id:arg1:arg2:...'
+        Chave de cache formatada: 'prefix:workspace_id:arg1:arg2:...'
     """
     parts = [prefix]
-    if company_id:
-        parts.append(str(company_id))
+    if workspace_id:
+        parts.append(str(workspace_id))
     parts.extend(str(arg) for arg in args)
     return ":".join(parts)
 
@@ -28,7 +28,7 @@ def cache_get_or_set(
     key: str,
     callable_func: callable,
     timeout: int = 300,
-    company_id: Optional[str] = None,
+    workspace_id: Optional[str] = None,
 ) -> Any:
     """Obtém valor do cache ou executa função e armazena.
 
@@ -36,12 +36,12 @@ def cache_get_or_set(
         key: Chave base do cache
         callable_func: Função a executar se não estiver em cache
         timeout: Tempo de expiração em segundos (padrão: 5 minutos)
-        company_id: ID da company para isolamento
+        workspace_id: ID do workspace para isolamento
 
     Returns:
         Valor do cache ou resultado da função
     """
-    cache_key = get_cache_key(key, company_id=company_id) if company_id else key
+    cache_key = get_cache_key(key, workspace_id=workspace_id) if workspace_id else key
 
     value = cache.get(cache_key)
     if value is None:
@@ -71,16 +71,17 @@ def cache_invalidate_pattern(pattern: str) -> int:
     return 0
 
 
-def cache_invalidate_company(company_id: str, prefix: Optional[str] = None) -> int:
-    """Invalida todo o cache de uma company.
+def cache_invalidate_workspace(workspace_id: str, prefix: Optional[str] = None) -> int:
+    """Invalida todo o cache de um workspace.
 
     Args:
-        company_id: ID da company
+        workspace_id: ID do workspace
         prefix: Prefixo opcional para filtrar (ex: 'user_profile')
 
     Returns:
         Número de chaves invalidadas
     """
-    pattern = f"{prefix}:{company_id}:*" if prefix else f"*:{company_id}:*"
+    pattern = f"{prefix}:{workspace_id}:*" if prefix else f"*:{workspace_id}:*"
     return cache_invalidate_pattern(pattern)
+
 

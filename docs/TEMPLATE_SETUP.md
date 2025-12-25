@@ -133,10 +133,46 @@ Veja `.env.example` para lista completa de variáveis configuráveis.
 - `API_URL` - URL da API (quando separado)
 - `CORS_ENABLED` - Habilitar CORS (quando separado)
 
+## 🔄 Sincronização de Código Compartilhado
+
+Este template contém código compartilhado que pode ser atualizado quando o template é melhorado.
+
+**Documentação completa**: [`@docs/SHARED_VS_CUSTOMIZABLE.md`](SHARED_VS_CUSTOMIZABLE.md)
+
+### O que é Código Compartilhado?
+
+Código compartilhado é código que vem do template e deve ser sincronizado quando o template é atualizado:
+
+- **Backend**: `apps/core/`, `apps/accounts/` (base)
+- **Frontend**: `features/admin/` (Admin UI Kit), `features/auth/` (lógica), `config/api.ts`, `lib/`
+
+### O que é Código Customizável?
+
+Código customizável é código que você pode modificar livremente:
+
+- **Backend**: `apps/leads/` (exemplo), novos apps, `config/settings/`
+- **Frontend**: `pages/`, `App.tsx`, `features/leads/` (exemplo), componentes de negócio
+
+### Processo de Sincronização
+
+Quando o template é atualizado:
+
+1. Verificar versão do template (tags Git: `v1.0.0`, `v1.1.0`, etc)
+2. Revisar CHANGELOG para breaking changes
+3. Sincronizar código compartilhado seletivamente
+4. Resolver conflitos manualmente
+5. Testar após sincronização
+
+**Guia detalhado**: [`@docs/SHARED_VS_CUSTOMIZABLE.md`](SHARED_VS_CUSTOMIZABLE.md#processo-de-sincronização-detalhado)
+
+---
+
 ## ⚠️ Importante
 
 1. **NUNCA commite `.env`** com valores reais
 2. **SEMPRE use `ADMIN_URL_PREFIX` diferente de "admin"** em produção
 3. **Gere `SECRET_KEY` único** para cada ambiente
 4. **Atualize `ALLOWED_HOSTS`** antes do deploy
+5. **NUNCA modifique código compartilhado diretamente** — use herança/extensão (ver [`@docs/SHARED_VS_CUSTOMIZABLE.md`](SHARED_VS_CUSTOMIZABLE.md))
+
 

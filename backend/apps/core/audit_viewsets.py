@@ -7,11 +7,11 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.core.models import AuditLog
 from apps.core.audit_serializers import AuditLogListSerializer, AuditLogSerializer
-from apps.core.permissions import CompanyObjectPermission
-from apps.core.viewsets import CompanyViewSet
+from apps.core.permissions import WorkspaceObjectPermission
+from apps.core.viewsets import WorkspaceViewSet
 
 
-class AuditLogViewSet(CompanyViewSet, ReadOnlyModelViewSet):
+class AuditLogViewSet(WorkspaceViewSet, ReadOnlyModelViewSet):
     """ViewSet para consultar logs de auditoria LGPD.
 
     Apenas leitura - logs não podem ser criados, alterados ou deletados via API.
@@ -19,8 +19,8 @@ class AuditLogViewSet(CompanyViewSet, ReadOnlyModelViewSet):
 
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
-    # Inclui CompanyObjectPermission para validar ownership (previne IDOR)
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+    # Inclui WorkspaceObjectPermission para validar ownership (previne IDOR)
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = [
         "model_name",
@@ -40,7 +40,7 @@ class AuditLogViewSet(CompanyViewSet, ReadOnlyModelViewSet):
         return AuditLogSerializer
 
     def get_queryset(self) -> models.QuerySet[AuditLog]:
-        """Retorna queryset filtrado por company e com filtros opcionais."""
+        """Retorna queryset filtrado por workspace e com filtros opcionais."""
         queryset = super().get_queryset()
 
         # Filtros opcionais

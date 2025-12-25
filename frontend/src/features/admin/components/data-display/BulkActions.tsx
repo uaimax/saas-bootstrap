@@ -1,128 +1,94 @@
-/** Componente para ações em massa (similar ao Django Admin actions). */
-
-import { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react"
+import { Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-export interface BulkAction {
-  /** Label da ação */
-  label: string;
-  /** Ícone da ação (opcional) */
-  icon?: ReactNode;
-  /** Callback quando a ação é executada */
-  onAction: (selectedIds: (string | number)[]) => Promise<void> | void;
-  /** Se a ação requer confirmação */
-  requiresConfirmation?: boolean;
-  /** Mensagem de confirmação */
-  confirmationMessage?: string;
-  /** Se a ação está desabilitada */
-  disabled?: boolean;
-  /** Variante do botão (destructive para ações perigosas) */
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+interface BulkActionsProps {
+  selectedItems: (string | number)[]
+  onDelete?: (ids: (string | number)[]) => void
+  onSelectAll?: () => void
+  onDeselectAll?: () => void
+  totalItems?: number
 }
 
-export interface BulkActionsProps {
-  /** IDs dos itens selecionados */
-  selectedIds: (string | number)[];
-  /** Ações disponíveis */
-  actions: BulkAction[];
-  /** Callback quando a seleção é limpa */
-  onClearSelection?: () => void;
-  /** Classe CSS adicional */
-  className?: string;
-}
-
-/**
- * Componente para ações em massa.
- * Similar ao Django Admin actions dropdown.
- *
- * @example
- * <BulkActions
- *   selectedIds={selectedIds}
- *   actions={[
- *     {
- *       label: "Excluir selecionados",
- *       icon: <Trash2 className="h-4 w-4" />,
- *       onAction: async (ids) => await deleteLeads(ids),
- *       requiresConfirmation: true,
- *       variant: "destructive",
- *     },
- *   ]}
- *   onClearSelection={() => setSelectedIds([])}
- * />
- */
 export function BulkActions({
-  selectedIds,
-  actions,
-  onClearSelection,
-  className,
+  selectedItems,
+  onDelete,
+  onSelectAll,
+  onDeselectAll,
+  totalItems = 0,
 }: BulkActionsProps) {
-  if (selectedIds.length === 0) {
-    return null;
+  const [open, setOpen] = useState(false)
+
+  if (selectedItems.length === 0) return null
+
+  const allSelected = selectedItems.length === totalItems && totalItems > 0
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(selectedItems)
+      setOpen(false)
+    }
   }
 
-  const handleAction = async (action: BulkAction) => {
-    if (action.requiresConfirmation) {
-      const message = action.confirmationMessage || `Tem certeza que deseja executar "${action.label}"?`;
-      if (!window.confirm(message)) {
-        return;
-      }
-    }
-
-    try {
-      await action.onAction(selectedIds);
-      onClearSelection?.();
-    } catch (error) {
-      console.error("Erro ao executar ação em massa:", error);
-    }
-  };
-
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <span className="text-sm text-muted-foreground">
-        {selectedIds.length} {selectedIds.length === 1 ? "item selecionado" : "itens selecionados"}
-      </span>
-      {actions.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <MoreHorizontal className="mr-2 h-4 w-4" />
-              Ações
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Ações em massa</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {actions.map((action, index) => (
-              <DropdownMenuItem
-                key={index}
-                onClick={() => handleAction(action)}
-                disabled={action.disabled}
-                className={cn(action.variant === "destructive" && "text-destructive")}
-              >
-                {action.icon && <span className="mr-2">{action.icon}</span>}
-                {action.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-      {onClearSelection && (
-        <Button variant="ghost" size="sm" onClick={onClearSelection}>
-          Limpar seleção
-        </Button>
-      )}
+    <div className="flex items-center gap-4 rounded-lg border bg-muted/50 p-3">
+      <div className="flex-1">
+        <span className="text-sm font-medium">
+          {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} selecionado
+          {selectedItems.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        {allSelected ? (
+          <Button variant="outline" size="sm" onClick={onDeselectAll}>
+            Desmarcar todos
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" onClick={onSelectAll}>
+            Selecionar todos
+          </Button>
+        )}
+        {onDelete && (
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Deletar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja deletar {selectedItems.length} item
+                  {selectedItems.length !== 1 ? "s" : ""}? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Deletar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
     </div>
-  );
+  )
 }
-
 

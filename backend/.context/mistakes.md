@@ -88,7 +88,7 @@ ViewSet que não filtra por tenant, permitindo acesso a dados de outros tenants.
 
 ---
 
-## ❌ Remover CompanyObjectPermission ao Sobrescrever permission_classes
+## ❌ Remover WorkspaceObjectPermission ao Sobrescrever permission_classes
 
 **Data**: 2025-12-24
 **Categoria**: backend, security
@@ -96,33 +96,33 @@ ViewSet que não filtra por tenant, permitindo acesso a dados de outros tenants.
 **Severidade**: critical
 
 ### Contexto
-ViewSet que herda de `CompanyViewSet` mas sobrescreve `permission_classes` sem incluir `CompanyObjectPermission`.
+ViewSet que herda de `WorkspaceViewSet` mas sobrescreve `permission_classes` sem incluir `WorkspaceObjectPermission`.
 
 ### Problema
 ```python
 # ❌ ERRADO
-class MyViewSet(CompanyViewSet):
+class MyViewSet(WorkspaceViewSet):
     permission_classes = [IsAuthenticated]  # Remove proteção IDOR!
 ```
 
 ### Solução
 ```python
 # ✅ CORRETO
-from apps.core.permissions import CompanyObjectPermission
+from apps.core.permissions import WorkspaceObjectPermission
 
-class MyViewSet(CompanyViewSet):
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+class MyViewSet(WorkspaceViewSet):
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
 ```
 
 ### Por Que É Crítico
 - Remove proteção contra IDOR (Insecure Direct Object Reference)
-- Permite acesso a objetos de outras companies
+- Permite acesso a objetos de outras workspaces
 - Violação crítica de isolamento multi-tenant
 
 ### Lições Aprendidas
-- **SEMPRE** incluir `CompanyObjectPermission` ao sobrescrever `permission_classes`
-- `CompanyViewSet` já inclui por padrão, mas sobrescrever remove
-- Verificar em code review se `CompanyObjectPermission` está presente
+- **SEMPRE** incluir `WorkspaceObjectPermission` ao sobrescrever `permission_classes`
+- `WorkspaceViewSet` já inclui por padrão, mas sobrescrever remove
+- Verificar em code review se `WorkspaceObjectPermission` está presente
 
 ### Referências
 - `backend/.context/security-patterns.md`
@@ -208,6 +208,132 @@ class LeadViewSet(viewsets.ModelViewSet):
 ### Referências
 - `backend/apps/core/middleware.py`
 - `docs/ARCHITECTURE.md`
+
+---
+
+---
+date: 2025-01-27
+category: backend
+tags: [cors, headers, api, multi-tenancy]
+severity: high
+---
+
+## CORS: Falta de Headers Customizados em CORS_ALLOW_HEADERS
+
+### Contexto
+Requisições do frontend para API sendo bloqueadas por CORS com erro "Request header field x-workspace-id is not allowed by Access-Control-Allow-Headers".
+
+### Problema
+O header customizado `X-Workspace-ID` (usado para multi-tenancy) não estava na lista de headers permitidos pelo CORS:
+
+```python
+# ❌ ERRADO
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+    "x-tenant-id",  # Tinha apenas X-Tenant-ID
+    # ❌ Faltava X-Workspace-ID
+]
+```
+
+**Erro resultante:**
+```
+Access to XMLHttpRequest at 'http://localhost:8001/api/v1/auth/profile/'
+from origin 'http://localhost:5173' has been blocked by CORS policy:
+Request header field x-workspace-id is not allowed by Access-Control-Allow-Headers
+in preflight response.
+```
+
+### Solução
+**SEMPRE adicionar headers customizados em `CORS_ALLOW_HEADERS`:**
+
+```python
+# ✅ CORRETO
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-tenant-id",  # Compatibilidade
+    "x-workspace-id",  # ✅ Header customizado para multi-tenancy
+]
+```
+
+### Lições Aprendidas
+- **SEMPRE** adicionar headers customizados em `CORS_ALLOW_HEADERS`
+- Headers customizados precisam ser explicitamente permitidos pelo CORS
+- Erro de CORS bloqueia requisições completamente (não é apenas warning)
+- Verificar todos os headers enviados pelo frontend (`X-Workspace-ID`, `X-Tenant-ID`, etc.)
+- Reiniciar servidor Django após mudanças em configurações de CORS
+
+### Referências
+- Arquivos: `backend/config/settings/base.py`
+- Docs: [django-cors-headers](https://github.com/adamchainz/django-cors-headers)
+
+---
+
+---
+date: 2025-01-27
+category: backend
+tags: [csrf, security, django, api]
+severity: high
+---
+
+## CSRF: Falta de CSRF_TRUSTED_ORIGINS em Desenvolvimento
+
+### Contexto
+Requisições POST do frontend (login, etc.) sendo bloqueadas com erro "CSRF Failed: Origin checking failed".
+
+### Problema
+O `CSRF_TRUSTED_ORIGINS` não estava configurado em `dev.py`, causando bloqueio de requisições CSRF:
+
+```python
+# ❌ ERRADO - dev.py
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = "Lax"
+# ❌ Faltava CSRF_TRUSTED_ORIGINS
+```
+
+**Erro resultante:**
+```json
+{
+    "detail": "CSRF Failed: Origin checking failed - http://localhost:5173 does not match any trusted origins."
+}
+```
+
+### Solução
+**SEMPRE configurar `CSRF_TRUSTED_ORIGINS` em desenvolvimento:**
+
+```python
+# ✅ CORRETO - dev.py
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = "Lax"
+# CSRF Trusted Origins - permite requisições do frontend
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+```
+
+### Lições Aprendidas
+- **SEMPRE** configurar `CSRF_TRUSTED_ORIGINS` em desenvolvimento
+- Django 5+ verifica origem mais rigorosamente
+- `CORS_ALLOWED_ORIGINS` e `CSRF_TRUSTED_ORIGINS` são coisas diferentes:
+  - `CORS_ALLOWED_ORIGINS`: controla CORS (headers, métodos)
+  - `CSRF_TRUSTED_ORIGINS`: controla validação CSRF (origem confiável)
+- Reiniciar servidor Django após mudanças em configurações de CSRF
+- Em produção, usar variáveis de ambiente para `CSRF_TRUSTED_ORIGINS`
+
+### Referências
+- Arquivos: `backend/config/settings/dev.py`
+- Docs: [Django CSRF - Trusted Origins](https://docs.djangoproject.com/en/5.0/ref/settings/#csrf-trusted-origins)
 
 ---
 

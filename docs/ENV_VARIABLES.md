@@ -34,6 +34,25 @@ LOG_LEVEL=INFO          # DEBUG, INFO, WARNING, ERROR
 LOG_FORMAT=text         # 'text' (dev) ou 'json' (prod)
 ```
 
+### Logging Híbrido (Sentry/GlitchTip ou Banco)
+```bash
+# Backend
+USE_SENTRY=false        # true para usar Sentry/GlitchTip, false para usar banco
+SENTRY_DSN=             # DSN do Sentry ou GlitchTip (se USE_SENTRY=true)
+LOG_RETENTION_DAYS=7    # Dias de retenção no banco (padrão: 7)
+ENVIRONMENT=production   # Ambiente (development, staging, production)
+
+# Frontend
+VITE_SENTRY_DSN=        # DSN do Sentry ou GlitchTip (opcional, se configurado usa Sentry/GlitchTip)
+```
+
+**Nota**:
+- Se `USE_SENTRY=true` (backend) ou `VITE_SENTRY_DSN` (frontend) estiver configurado,
+  os logs vão para Sentry ou GlitchTip (compatível com API do Sentry).
+- Caso contrário, são salvos no banco de dados.
+- **GlitchTip**: Alternativa open-source ao Sentry, compatível com os mesmos SDKs.
+  Use o DSN do GlitchTip no lugar do DSN do Sentry.
+
 ## 🔧 API Configuration
 
 ```bash
@@ -92,4 +111,5 @@ MICROSOFT_TENANT_ID=common  # common, organizations, consumers
 
 - [Cache e Performance](CACHE_AND_PERFORMANCE.md) - Guia completo de cache, throttling e logging
 - [Arquitetura](ARCHITECTURE.md) - Decisões técnicas e estrutura
+
 

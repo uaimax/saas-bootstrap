@@ -180,3 +180,6 @@ Para questões sobre estes templates:
 **Base legal consultada**: LGPD, CDC, Marco Civil da Internet, Código Civil
 **Status**: Templates completos e agnósticos, prontos para adaptação
 
+
+
+

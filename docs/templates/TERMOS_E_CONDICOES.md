@@ -370,3 +370,6 @@ Para questões, dúvidas ou solicitações relacionadas a estes Termos, entre em
 
 *Este documento é um template e deve ser adaptado às especificidades do seu sistema e revisado por profissional especializado em direito digital antes de ser publicado.*
 
+
+
+

@@ -3,10 +3,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import CompanyModel
+from apps.core.models import WorkspaceModel
 
 
-class Lead(CompanyModel):
+class Lead(WorkspaceModel):
     """Modelo de Lead (exemplo de módulo com multi-tenancy)."""
 
     STATUS_CHOICES = [
@@ -20,7 +20,7 @@ class Lead(CompanyModel):
     name = models.CharField(max_length=255, verbose_name=_("Nome"))
     email = models.EmailField(verbose_name=_("Email"))
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name=_("Telefone"))
-    client_company = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Empresa do Cliente"))
+    client_workspace = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Workspace do Cliente"))
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -35,8 +35,8 @@ class Lead(CompanyModel):
         verbose_name_plural = _("Leads")
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["company", "status"]),  # company vem de CompanyModel
-            models.Index(fields=["company", "created_at"]),  # company vem de CompanyModel
+            models.Index(fields=["workspace", "status"]),  # workspace vem de WorkspaceModel
+            models.Index(fields=["workspace", "created_at"]),  # workspace vem de WorkspaceModel
         ]
 
     def __str__(self) -> str:

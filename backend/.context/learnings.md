@@ -21,19 +21,19 @@ Este arquivo documenta **soluções que funcionaram bem** e devem ser replicadas
 **Severidade**: critical
 
 ### O Que Funcionou
-Implementar `CompanyObjectPermission` como permissão explícita em `CompanyViewSet` previne IDOR de forma testável e clara.
+Implementar `WorkspaceObjectPermission` como permissão explícita em `WorkspaceViewSet` previne IDOR de forma testável e clara.
 
 ### Implementação
 ```python
 # apps/core/permissions.py
-class CompanyObjectPermission(BasePermission):
+class WorkspaceObjectPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
-        if not hasattr(obj, "company"):
+        if not hasattr(obj, "workspace"):
             return False
-        request_company = getattr(request, "company", None)
-        if not request_company:
+        request_workspace = getattr(request, "workspace", None)
+        if not request_workspace:
             return False
-        return obj.company_id == request_company.id
+        return obj.workspace_id == request_workspace.id
 ```
 
 ### Por Que Funcionou Bem
@@ -357,11 +357,11 @@ Implementação de sistema de auditoria automática usando Django signals (`post
 
 ### Problema Identificado
 
-1. **Foreign Key Constraint Failed**: Ao criar um `AuditLog` dentro de um signal `post_save`, o Django tentava criar o log antes que a transação fosse commitada, causando erro de foreign key quando o `AuditLog` tentava referenciar uma `Company` que ainda não estava salva no banco.
+1. **Foreign Key Constraint Failed**: Ao criar um `AuditLog` dentro de um signal `post_save`, o Django tentava criar o log antes que a transação fosse commitada, causando erro de foreign key quando o `AuditLog` tentava referenciar uma `Workspace` que ainda não estava salva no banco.
 
 2. **Transaction.on_commit em Testes**: O uso de `transaction.on_commit()` não funcionava corretamente em testes porque os testes do Django usam transações de rollback, e os callbacks de `on_commit` podem não ser executados imediatamente.
 
-3. **Obtenção de Company em Instâncias Recém-Criadas**: Quando uma instância é criada, acessar `instance.company` pode causar uma query adicional ou falhar se a foreign key ainda não estiver persistida.
+3. **Obtenção de Workspace em Instâncias Recém-Criadas**: Quando uma instância é criada, acessar `instance.workspace` pode causar uma query adicional ou falhar se a foreign key ainda não estiver persistida.
 
 ### Solução Implementada
 
@@ -388,24 +388,24 @@ else:
     transaction.on_commit(create_log)
 ```
 
-#### 3. Obtenção Segura de Company
-Tentar múltiplas estratégias para obter a `company`:
+#### 3. Obtenção Segura de Workspace
+Tentar múltiplas estratégias para obter a `workspace`:
 
 ```python
-company = None
+workspace = None
 try:
-    # 1. Tentar company_id primeiro (mais seguro, não precisa de query)
-    if hasattr(instance, "company_id") and instance.company_id:
-        from apps.accounts.models import Company
+    # 1. Tentar workspace_id primeiro (mais seguro, não precisa de query)
+    if hasattr(instance, "workspace_id") and instance.workspace_id:
+        from apps.accounts.models import Workspace
         try:
-            company = Company.objects.get(pk=instance.company_id)
-        except (Company.DoesNotExist, ValueError, TypeError):
+            workspace = Workspace.objects.get(pk=instance.workspace_id)
+        except (Workspace.DoesNotExist, ValueError, TypeError):
             pass
-    # 2. Tentar acessar company diretamente
-    elif hasattr(instance, "company"):
-        company = getattr(instance, "company", None)
-        if company and hasattr(company, 'pk') and not company.pk:
-            company = None
+    # 2. Tentar acessar workspace diretamente
+    elif hasattr(instance, "workspace"):
+        workspace = getattr(instance, "workspace", None)
+        if workspace and hasattr(workspace, 'pk') and not workspace.pk:
+            workspace = None
 except Exception:
     pass
 ```
@@ -442,7 +442,7 @@ if kwargs.get('raw', False):  # Fixtures e migrations
 
 3. **transaction.on_commit()**: Útil em produção, mas pode não funcionar como esperado em testes devido ao uso de transações de rollback.
 
-4. **Obtenção de Relacionamentos**: Preferir `instance.company_id` sobre `instance.company` quando possível, pois evita queries adicionais e é mais seguro.
+4. **Obtenção de Relacionamentos**: Preferir `instance.workspace_id` sobre `instance.workspace` quando possível, pois evita queries adicionais e é mais seguro.
 
 5. **Resiliência em Signals**: Signals não devem quebrar a aplicação. Sempre tratar exceções e permitir que a operação principal continue.
 
@@ -461,22 +461,22 @@ def my_signal_handler(sender, instance, created, **kwargs):
     is_test = _is_testing()
 
     # 3. Obter relacionamentos de forma segura
-    company = None
-    if hasattr(instance, "company_id") and instance.company_id:
+    workspace = None
+    if hasattr(instance, "workspace_id") and instance.workspace_id:
         try:
-            company = Company.objects.get(pk=instance.company_id)
-        except Company.DoesNotExist:
+            workspace = Workspace.objects.get(pk=instance.workspace_id)
+        except Workspace.DoesNotExist:
             pass
 
     # 4. Executar ação condicionalmente
     if is_test:
         # Executar diretamente em testes
-        do_something(instance, company)
+        do_something(instance, workspace)
     else:
         # Usar on_commit em produção
         def do_it():
             instance.refresh_from_db()
-            do_something(instance, company)
+            do_something(instance, workspace)
         transaction.on_commit(do_it)
 ```
 

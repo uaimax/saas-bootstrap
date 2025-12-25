@@ -1,4 +1,4 @@
-# shadcn/ui no SaaS Bootstrap - Guia de Integração Adequada
+# componentes UI/ui no SaaS Bootstrap - Guia de Integração Adequada
 
 **Data da Pesquisa**: 2024-12-23
 **Status**: ✅ Completa
@@ -10,24 +10,24 @@
 
 ## 📊 Sumário Executivo
 
-Para usar **shadcn/ui adequadamente** no projeto SaaS Bootstrap, é essencial entender que shadcn/ui **não é uma biblioteca tradicional**, mas sim um **sistema de componentes copy-paste** que você possui e customiza completamente. Considerando o contexto do projeto (React 19 + Vite + TypeScript + Multi-tenancy), as recomendações principais são:
+Para usar **componentes UI/ui adequadamente** no projeto SaaS Bootstrap, é essencial entender que componentes UI/ui **não é uma biblioteca tradicional**, mas sim um **sistema de componentes copy-paste** que você possui e customiza completamente. Considerando o contexto do projeto (React 19 + Vite + TypeScript + Multi-tenancy), as recomendações principais são:
 
 **Arquitetura Recomendada:**
-1. **Estrutura de Pastas**: Manter `src/components/ui/` para componentes shadcn base, `src/components/` para componentes customizados do projeto
-2. **Customização Obrigatória**: Personalizar componentes shadcn para evitar aparência genérica - essencial para diferenciação em SaaS
-3. **Extensão por Composição**: Criar wrappers e componentes compostos que estendem shadcn sem modificar diretamente os componentes base
+1. **Estrutura de Pastas**: Manter `src/components/ui/` para componentes componentes UI base, `src/components/` para componentes customizados do projeto
+2. **Customização Obrigatória**: Personalizar componentes componentes UI para evitar aparência genérica - essencial para diferenciação em SaaS
+3. **Extensão por Composição**: Criar wrappers e componentes compostos que estendem componentes UI sem modificar diretamente os componentes base
 4. **Theming Multi-Tenant**: Usar CSS variables já configuradas para suportar temas por tenant (futuro)
 5. **Performance**: Aproveitar tree-shaking natural (componentes são código seu) e lazy loading quando necessário
 
 **Principais Descobertas:**
-- shadcn/ui já está parcialmente configurado no projeto (components.json, utils.ts, Tailwind configurado)
+- componentes UI/ui já está parcialmente configurado no projeto (components.json, utils.ts, Tailwind configurado)
 - A abordagem copy-paste oferece controle total, mas requer manutenção ativa
 - Radix UI (dependência base) tem questões de manutenção reportadas - monitorar atualizações
 - Componentes são altamente acessíveis por padrão (Radix UI primitives)
 - Integração com React Hook Form + Zod é padrão recomendado para forms
 
 **Riscos Identificados:**
-- ⚠️ **Aparência Genérica**: Sem customização, aplicações shadcn tendem a parecer similares
+- ⚠️ **Aparência Genérica**: Sem customização, aplicações componentes UI tendem a parecer similares
 - ⚠️ **Manutenção do Radix UI**: Dependência base pode ter questões de manutenção
 - ⚠️ **Atualizações**: Componentes copiados precisam ser atualizados manualmente
 
@@ -49,11 +49,11 @@ Para usar **shadcn/ui adequadamente** no projeto SaaS Bootstrap, é essencial en
 ```
 frontend/src/
 ├── components/
-│   ├── ui/          # Componentes shadcn (já existe)
+│   ├── ui/          # Componentes componentes UI (já existe)
 │   ├── Layout.tsx
 │   └── ProtectedRoute.tsx
 ├── lib/
-│   └── utils.ts     # Utilitário cn() para shadcn
+│   └── utils.ts     # Utilitário cn() para componentes UI
 ├── pages/
 ├── config/
 └── contexts/
@@ -65,8 +65,8 @@ frontend/src/
 - **Vite 7.2.4** - Build tool e dev server
 - **TypeScript 5.9.3** - Type safety
 - **Tailwind CSS 3.4.19** - Utilitários CSS
-- **shadcn/ui** - Componentes UI (copy-paste)
-- **Radix UI** - Primitives acessíveis (dependência do shadcn)
+- **componentes UI/ui** - Componentes UI (copy-paste)
+- **Radix UI** - Primitives acessíveis (dependência do componentes UI)
 
 ### 1.3 Requisitos Específicos do Projeto
 
@@ -78,11 +78,11 @@ frontend/src/
 
 ---
 
-## 2. Filosofia e Arquitetura do shadcn/ui
+## 2. Filosofia e Arquitetura do componentes UI/ui
 
-### 2.1 O Que É shadcn/ui
+### 2.1 O Que É componentes UI/ui
 
-**shadcn/ui não é uma biblioteca tradicional:**
+**componentes UI/ui não é uma biblioteca tradicional:**
 - ❌ **NÃO** é um pacote npm instalado como dependência
 - ✅ **É** um sistema de componentes que você copia para seu projeto
 - ✅ Você **possui** o código dos componentes
@@ -106,18 +106,18 @@ frontend/src/
 
 ```
 src/components/
-├── ui/                          # Componentes shadcn base (NÃO MODIFICAR DIRETAMENTE)
-│   ├── button.tsx               # Componente base do shadcn
+├── ui/                          # Componentes componentes UI base (NÃO MODIFICAR DIRETAMENTE)
+│   ├── button.tsx               # Componente base do componentes UI
 │   ├── input.tsx
 │   ├── form.tsx
 │   ├── table.tsx
 │   └── ...
 ├── forms/                       # Componentes de formulário customizados
-│   ├── LeadForm.tsx             # Usa shadcn Form + Input + Button
+│   ├── LeadForm.tsx             # Usa componentes UI Form + Input + Button
 │   └── UserForm.tsx
 ├── data-display/                # Componentes de exibição de dados
-│   ├── DataTable.tsx            # Usa shadcn Table
-│   └── StatsCard.tsx            # Usa shadcn Card
+│   ├── DataTable.tsx            # Usa componentes UI Table
+│   └── StatsCard.tsx            # Usa componentes UI Card
 ├── layout/                      # Componentes de layout
 │   ├── Sidebar.tsx
 │   └── Header.tsx
@@ -127,8 +127,8 @@ src/components/
 ```
 
 **Regra de Ouro:**
-- **`components/ui/`**: Componentes shadcn base - adicionar via `npx shadcn-ui@latest add [component]`
-- **`components/*/`**: Componentes customizados que **usam** componentes shadcn, mas não os modificam diretamente
+- **`components/ui/`**: Componentes componentes UI base - adicionar via `npx componentes UI-ui@latest add [component]`
+- **`components/*/`**: Componentes customizados que **usam** componentes componentes UI, mas não os modificam diretamente
 
 ### 2.3 Padrão de Extensão (Composition over Modification)
 
@@ -147,7 +147,7 @@ export function Button({ className, ...props }: ButtonProps) {
 
 **✅ CORRETO - Criar Wrapper/Composição:**
 ```typescript
-// ✅ CORRETO: Criar componente customizado que usa shadcn
+// ✅ CORRETO: Criar componente customizado que usa componentes UI
 // src/components/forms/SubmitButton.tsx
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -185,7 +185,7 @@ export function SubmitButton({
 ```
 frontend/src/
 ├── components/
-│   ├── ui/                      # shadcn base (gerenciado via CLI)
+│   ├── ui/                      # componentes UI base (gerenciado via CLI)
 │   │   ├── button.tsx
 │   │   ├── input.tsx
 │   │   ├── form.tsx
@@ -230,7 +230,7 @@ frontend/src/
 
 ### 3.2 Convenções de Nomenclatura
 
-**Componentes shadcn (ui/):**
+**Componentes componentes UI (ui/):**
 - Sempre em **lowercase** com hífen: `button.tsx`, `input.tsx`, `data-table.tsx`
 - Exportam componente com **PascalCase**: `export function Button()`
 
@@ -240,7 +240,7 @@ frontend/src/
 
 **Imports:**
 ```typescript
-// Componentes shadcn
+// Componentes componentes UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -364,7 +364,7 @@ function App() {
 npm install react-hook-form @hookform/resolvers zod
 ```
 
-**Estrutura de Form com shadcn:**
+**Estrutura de Form com componentes UI:**
 
 ```typescript
 // src/components/forms/LeadForm.tsx
@@ -443,7 +443,7 @@ export function LeadForm() {
 
 ```typescript
 // src/components/forms/FormField.tsx
-import { FormField as ShadcnFormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField as UIFormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Control, FieldPath, FieldValues } from "react-hook-form";
 
@@ -463,7 +463,7 @@ export function FormField<T extends FieldValues>({
   type = "text",
 }: FormFieldProps<T>) {
   return (
-    <ShadcnFormField
+    <UIFormField
       control={control}
       name={name}
       render={({ field }) => (
@@ -486,7 +486,7 @@ export function FormField<T extends FieldValues>({
 
 ### 6.1 Tree Shaking Natural
 
-**Vantagem do shadcn/ui:**
+**Vantagem do componentes UI/ui:**
 - Componentes são **código seu** - apenas o que você importa é incluído
 - Não há bundle de biblioteca completa
 - Tree shaking funciona perfeitamente com Vite
@@ -554,7 +554,7 @@ import { Button, Input } from "@/components/ui";
 
 ### 7.1 Acessibilidade Built-in
 
-**shadcn/ui usa Radix UI Primitives:**
+**componentes UI/ui usa Radix UI Primitives:**
 - ✅ **ARIA attributes** automáticos
 - ✅ **Keyboard navigation** nativa
 - ✅ **Focus management** correto
@@ -631,38 +631,38 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 
 ```bash
 # Formulários
-npx shadcn-ui@latest add form
-npx shadcn-ui@latest add input
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add select
-npx shadcn-ui@latest add checkbox
-npx shadcn-ui@latest add radio-group
+npx componentes UI-ui@latest add form
+npx componentes UI-ui@latest add input
+npx componentes UI-ui@latest add button
+npx componentes UI-ui@latest add select
+npx componentes UI-ui@latest add checkbox
+npx componentes UI-ui@latest add radio-group
 
 # Exibição de Dados
-npx shadcn-ui@latest add table
-npx shadcn-ui@latest add card
-npx shadcn-ui@latest add badge
+npx componentes UI-ui@latest add table
+npx componentes UI-ui@latest add card
+npx componentes UI-ui@latest add badge
 
 # Navegação e Layout
-npx shadcn-ui@latest add dropdown-menu
-npx shadcn-ui@latest add navigation-menu
-npx shadcn-ui@latest add separator
+npx componentes UI-ui@latest add dropdown-menu
+npx componentes UI-ui@latest add navigation-menu
+npx componentes UI-ui@latest add separator
 
 # Feedback
-npx shadcn-ui@latest add dialog
-npx shadcn-ui@latest add alert
-npx shadcn-ui@latest add toast
-npx shadcn-ui@latest add progress
+npx componentes UI-ui@latest add dialog
+npx componentes UI-ui@latest add alert
+npx componentes UI-ui@latest add toast
+npx componentes UI-ui@latest add progress
 
 # Utilitários
-npx shadcn-ui@latest add skeleton
-npx shadcn-ui@latest add tooltip
-npx shadcn-ui@latest add popover
+npx componentes UI-ui@latest add skeleton
+npx componentes UI-ui@latest add tooltip
+npx componentes UI-ui@latest add popover
 ```
 
 ### 8.2 Exemplo: DataTable para SaaS
 
-**Componente Customizado Usando shadcn Table:**
+**Componente Customizado Usando componentes UI Table:**
 
 ```typescript
 // src/components/data-display/DataTable.tsx
@@ -731,9 +731,9 @@ export function DataTable<T extends Record<string, any>>({
 ### 9.1 Riscos Identificados
 
 **1. Aparência Genérica (ALTO)**
-- **Problema**: Sem customização, aplicações shadcn tendem a parecer similares
+- **Problema**: Sem customização, aplicações componentes UI tendem a parecer similares
 - **Solução**: Personalizar cores, tipografia, espaçamentos e criar componentes únicos
-- **Ação**: Definir design system próprio baseado em shadcn, não usar "out of the box"
+- **Ação**: Definir design system próprio baseado em componentes UI, não usar "out of the box"
 
 **2. Manutenção do Radix UI (MÉDIO)**
 - **Problema**: Radix UI (dependência base) tem questões de manutenção reportadas
@@ -742,8 +742,8 @@ export function DataTable<T extends Record<string, any>>({
 
 **3. Atualizações Manuais (MÉDIO)**
 - **Problema**: Componentes copiados precisam ser atualizados manualmente
-- **Solução**: Estabelecer processo de revisão periódica de atualizações do shadcn
-- **Ação**: Revisar changelog do shadcn trimestralmente
+- **Solução**: Estabelecer processo de revisão periódica de atualizações do componentes UI
+- **Ação**: Revisar changelog do componentes UI trimestralmente
 
 **4. Curva de Aprendizado (BAIXO)**
 - **Problema**: Equipe precisa entender padrões de composição
@@ -757,7 +757,7 @@ export function DataTable<T extends Record<string, any>>({
 - Atualizações são manuais via CLI
 
 **2. Dependência do Radix UI**
-- Se Radix UI tiver problemas, shadcn é afetado
+- Se Radix UI tiver problemas, componentes UI é afetado
 - Considerar alternativas se necessário
 
 **3. Customização Requer Conhecimento**
@@ -807,10 +807,10 @@ export function DataTable<T extends Record<string, any>>({
 
 ### Padrões Emergentes
 
-1. **Copy-Paste como Filosofia**: shadcn/ui revoluciona o conceito de biblioteca de componentes ao dar propriedade total do código ao desenvolvedor
+1. **Copy-Paste como Filosofia**: componentes UI/ui revoluciona o conceito de biblioteca de componentes ao dar propriedade total do código ao desenvolvedor
 2. **Composição sobre Modificação**: Padrão claro de estender componentes via composição, não modificação direta
 3. **CSS Variables para Theming**: Abordagem moderna e flexível para theming, especialmente útil para multi-tenancy
-4. **Integração com React Hook Form**: Padrão quase universal para forms em projetos shadcn
+4. **Integração com React Hook Form**: Padrão quase universal para forms em projetos componentes UI
 
 ### Contradições Identificadas
 
@@ -819,64 +819,64 @@ export function DataTable<T extends Record<string, any>>({
 
 ### Gaps de Informação
 
-1. **Performance em Larga Escala**: Poucos dados sobre performance de aplicações shadcn com centenas de componentes
+1. **Performance em Larga Escala**: Poucos dados sobre performance de aplicações componentes UI com centenas de componentes
 2. **Migração de Outras Bibliotecas**: Pouca documentação sobre migração de Material-UI, Ant Design, etc.
-3. **Testes Automatizados**: Padrões de teste para componentes shadcn customizados
+3. **Testes Automatizados**: Padrões de teste para componentes componentes UI customizados
 
 ### Dados Mais Recentes vs. Históricos
 
 - ✅ **Dados recentes (2024-2025)**: Informações sobre React 19, Vite 7, TypeScript 5.9
-- ✅ **Configuração atual**: shadcn/ui continua evoluindo com novos componentes
+- ✅ **Configuração atual**: componentes UI/ui continua evoluindo com novos componentes
 - ⚠️ **Dados desatualizados encontrados**: Algumas fontes mencionam versões antigas do React/TypeScript
 
 ---
 
 ## 📚 Fontes Consultadas (Bibliografia Completa)
 
-1. **Crazystack - The Big Problem with shadcn/ui**
-   *URL*: https://www.crazystack.com.br/2025-3/the-big-problem-with-shadcn-ui
+1. **Crazystack - The Big Problem with componentes UI/ui**
+   *URL*: https://www.crazystack.com.br/2025-3/the-big-problem-with-componentes UI-ui
    *Snippet*: Discussão sobre problemas de manutenção do Radix UI e necessidade de customização para evitar aparência genérica
 
-2. **Crazystack - shadcn/ui Tutorial Completo 2025**
-   *URL*: https://www.crazystack.com.br/shadcn-ui-tutorial-completo-2025
-   *Snippet*: Tutorial completo sobre instalação e uso do shadcn/ui
+2. **Crazystack - componentes UI/ui Tutorial Completo 2025**
+   *URL*: https://www.crazystack.com.br/componentes UI-ui-tutorial-completo-2025
+   *Snippet*: Tutorial completo sobre instalação e uso do componentes UI/ui
 
 3. **Diário Dev - Principais Bibliotecas de UI para React**
-   *URL*: https://diario-dev.megaplataforma.com.br/principais-bibliotecas-de-ui-para-react-conheca-o-shadcn-ui-e-outras-alternativas
-   *Snippet*: Comparação de bibliotecas de UI incluindo shadcn/ui
+   *URL*: https://diario-dev.megaplataforma.com.br/principais-bibliotecas-de-ui-para-react-conheca-o-componentes UI-ui-e-outras-alternativas
+   *Snippet*: Comparação de bibliotecas de UI incluindo componentes UI/ui
 
-4. **Medium - Integrar shadcn/ui en un proyecto con React**
-   *URL*: https://medium.com/@ciromirkin/integrar-shadcn-ui-en-un-proyecto-con-rect-f2d882cfae05
-   *Snippet*: Guia de integração do shadcn/ui em projetos React
+4. **Medium - Integrar componentes UI/ui en un proyecto con React**
+   *URL*: https://medium.com/@ciromirkin/integrar-componentes UI-ui-en-un-proyecto-con-rect-f2d882cfae05
+   *Snippet*: Guia de integração do componentes UI/ui em projetos React
 
-5. **YouTube - shadcn/UI está pronto para usar em produção?**
+5. **YouTube - componentes UI/UI está pronto para usar em produção?**
    *URL*: https://www.youtube.com/watch?v=22gt3VF6gtA
-   *Snippet*: Análise sobre maturidade e adequação do shadcn/ui para produção
+   *Snippet*: Análise sobre maturidade e adequação do componentes UI/ui para produção
 
-6. **YouTube - Criando UI no React na velocidade da luz! (shadcn/ui)**
+6. **YouTube - Criando UI no React na velocidade da luz! (componentes UI/ui)**
    *URL*: https://www.youtube.com/watch?v=er_QPBldsXE
-   *Snippet*: Tutorial prático sobre uso do shadcn/ui
+   *Snippet*: Tutorial prático sobre uso do componentes UI/ui
 
 7. **Creati.ai - v0.dev by Vercel Labs**
    *URL*: https://creati.ai/pt/ai-tools/v0-dev-by-vercel-labs/
-   *Snippet*: Ferramenta de IA para gerar código React com shadcn/ui
+   *Snippet*: Ferramenta de IA para gerar código React com componentes UI/ui
 
-8. **Tweakcn - Editor Visual para shadcn/ui**
+8. **Tweakcn - Editor Visual para componentes UI/ui**
    *URL*: https://tweakcn.com
-   *Snippet*: Editor visual para personalização de temas shadcn/ui
+   *Snippet*: Editor visual para personalização de temas componentes UI/ui
 
-9. **KDJingPai - shadcn/ui Tool**
-   *URL*: https://www.kdjingpai.com/pt/tool/shadcnui/
-   *Snippet*: Ferramenta e recursos relacionados ao shadcn/ui
+9. **KDJingPai - componentes UI/ui Tool**
+   *URL*: https://www.kdjingpai.com/pt/tool/componentes UIui/
+   *Snippet*: Ferramenta e recursos relacionados ao componentes UI/ui
 
 ---
 
 ## 🎯 Próximos Passos de Research
 
-- [ ] Pesquisar padrões específicos de testes para componentes shadcn customizados
+- [ ] Pesquisar padrões específicos de testes para componentes componentes UI customizados
 - [ ] Avaliar alternativas ao Radix UI (React Aria, Base UI) caso necessário
 - [ ] Pesquisar estratégias de theming multi-tenant mais avançadas
-- [ ] Investigar performance de aplicações shadcn em larga escala
+- [ ] Investigar performance de aplicações componentes UI em larga escala
 - [ ] Pesquisar padrões de migração de outras bibliotecas de UI
 
 ---
@@ -886,14 +886,14 @@ export function DataTable<T extends Record<string, any>>({
 - **Diagrama de Estrutura de Pastas**: Visualizar organização recomendada
 - **Fluxo de Customização**: Mostrar processo de extensão de componentes
 - **Arquitetura de Theming**: Diagrama do sistema de CSS variables
-- **Comparação de Abordagens**: Tabela comparando shadcn vs. bibliotecas tradicionais
+- **Comparação de Abordagens**: Tabela comparando componentes UI vs. bibliotecas tradicionais
 
 ---
 
 ## 📁 Relatório Salvo
 
 Este relatório foi salvo automaticamente em:
-**`docs/research/2024-12-23-shadcn-ui-saas-bootstrap-integration.md`**
+**`docs/research/2024-12-23-componentes UI-ui-saas-bootstrap-integration.md`**
 
 Você pode acessá-lo a qualquer momento para referência futura.
 
@@ -903,7 +903,7 @@ Você pode acessá-lo a qualquer momento para referência futura.
 
 ### Para o Projeto SaaS Bootstrap
 
-1. **✅ shadcn/ui é adequado** para o projeto, considerando:
+1. **✅ componentes UI/ui é adequado** para o projeto, considerando:
    - Stack atual (React 19 + Vite + TypeScript)
    - Necessidade de customização (SaaS precisa de identidade visual)
    - Arquitetura multi-tenant (CSS variables facilitam theming)
@@ -911,7 +911,7 @@ Você pode acessá-lo a qualquer momento para referência futura.
 2. **⚠️ Customização é obrigatória** - Não usar componentes "out of the box" sem personalização
 
 3. **📁 Estrutura recomendada**:
-   - `components/ui/` para componentes shadcn base
+   - `components/ui/` para componentes componentes UI base
    - `components/*/` para componentes customizados por domínio
    - Extensão via composição, não modificação direta
 
@@ -930,4 +930,5 @@ Você pode acessá-lo a qualquer momento para referência futura.
 - ✅ Contexto específico do projeto considerado
 - ⚠️ Algumas informações técnicas específicas precisariam de mais fontes
 - ✅ Recomendações práticas e acionáveis
+
 

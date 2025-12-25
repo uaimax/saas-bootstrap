@@ -31,9 +31,9 @@ key = "user_count"
 count = cache_get_or_set(key, lambda: User.objects.count(), timeout=60)
 
 # Cache com isolamento por tenant
-company_id = request.company.id
-key = get_cache_key("user_profile", user_id, company_id=company_id)
-profile = cache_get_or_set(key, fetch_user, timeout=300, company_id=company_id)
+workspace_id = request.workspace.id
+key = get_cache_key("user_profile", user_id, workspace_id=workspace_id)
+profile = cache_get_or_set(key, fetch_user, timeout=300, workspace_id=workspace_id)
 ```
 
 ### Uso em ViewSets
@@ -41,9 +41,9 @@ profile = cache_get_or_set(key, fetch_user, timeout=300, company_id=company_id)
 **Opção 1: Mixin automático**
 ```python
 from apps.core.mixins import CacheMixin
-from apps.core.viewsets import CompanyViewSet
+from apps.core.viewsets import WorkspaceViewSet
 
-class LeadViewSet(CacheMixin, CompanyViewSet):
+class LeadViewSet(CacheMixin, WorkspaceViewSet):
     cache_timeout = 300  # 5 minutos
     cache_actions = ['list', 'retrieve']  # Apenas estas ações
 ```
@@ -53,12 +53,12 @@ class LeadViewSet(CacheMixin, CompanyViewSet):
 from apps.core.cache import cache_get_or_set, get_cache_key
 
 def my_view(request):
-    cache_key = get_cache_key("my_data", company_id=request.company.id)
+    cache_key = get_cache_key("my_data", workspace_id=request.workspace.id)
     data = cache_get_or_set(
         cache_key,
         lambda: expensive_operation(),
         timeout=300,
-        company_id=request.company.id,
+        workspace_id=request.workspace.id,
     )
     return Response(data)
 ```
@@ -66,10 +66,10 @@ def my_view(request):
 ### Invalidação
 
 ```python
-from apps.core.cache import cache_invalidate_company, cache_invalidate_pattern
+from apps.core.cache import cache_invalidate_workspace, cache_invalidate_pattern
 
-# Invalidar todo cache de uma company
-cache_invalidate_company(company_id)
+# Invalidar todo cache de um workspace
+cache_invalidate_workspace(workspace_id)
 
 # Invalidar padrão específico
 cache_invalidate_pattern("user_profile:*")
@@ -77,7 +77,7 @@ cache_invalidate_pattern("user_profile:*")
 
 ### Exemplos Implementados
 
-- ✅ `companies_list_view` - Cache de 5 minutos
+- ✅ `workspaces_list_view` - Cache de 5 minutos
 - ✅ `legal_terms_view` - Cache de 1 hora
 - ✅ `legal_privacy_view` - Cache de 1 hora
 
@@ -100,12 +100,12 @@ API_THROTTLE_USER=1000/hour     # Usuários autenticados
 
 ### Uso Customizado
 
-**Throttle por company (útil para planos diferentes):**
+**Throttle por workspace (útil para planos diferentes):**
 ```python
-from apps.core.throttles import CompanyRateThrottle
+from apps.core.throttles import WorkspaceRateThrottle
 
 class MyViewSet(viewsets.ModelViewSet):
-    throttle_classes = [CompanyRateThrottle]
+    throttle_classes = [WorkspaceRateThrottle]
 ```
 
 **Throttle específico por view:**
@@ -161,7 +161,7 @@ logger.info("Operação realizada")
 # Log com contexto extra (útil para JSON)
 logger.info("Operação realizada", extra={
     "user_id": user.id,
-    "company_id": company.id,
+    "workspace_id": workspace.id,
     "action": "create_lead",
 })
 ```
@@ -191,7 +191,7 @@ Quando `LOG_FORMAT=json`, logs são estruturados:
   "pathname": "/path/to/file.py",
   "lineno": 42,
   "user_id": "uuid-here",
-  "company_id": "uuid-here"
+  "workspace_id": "uuid-here"
 }
 ```
 
@@ -224,4 +224,5 @@ Quando `LOG_FORMAT=json`, logs são estruturados:
 - [Django Cache Framework](https://docs.djangoproject.com/en/5.0/topics/cache/)
 - [DRF Throttling](https://www.django-rest-framework.org/api-guide/throttling/)
 - [Python Logging](https://docs.python.org/3/library/logging.html)
+
 

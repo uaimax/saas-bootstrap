@@ -10,18 +10,18 @@
 ### 1. ✅ Validação Explícita de Ownership (IDOR Prevention)
 
 **Arquivo criado:**
-- `backend/apps/core/permissions.py` - `CompanyObjectPermission`
+- `backend/apps/core/permissions.py` - `WorkspaceObjectPermission`
 
 **Arquivos modificados:**
-- `backend/apps/core/viewsets.py` - `CompanyViewSet` agora inclui `CompanyObjectPermission`
+- `backend/apps/core/viewsets.py` - `WorkspaceViewSet` agora inclui `WorkspaceObjectPermission`
 - `backend/apps/leads/viewsets.py` - `LeadViewSet` atualizado para incluir a permissão
 - `backend/apps/core/audit_viewsets.py` - `AuditLogViewSet` atualizado para incluir a permissão
 
 **Características:**
-- ✅ Valida explicitamente que `obj.company_id == request.company.id`
+- ✅ Valida explicitamente que `obj.workspace_id == request.workspace.id`
 - ✅ Previne IDOR (Insecure Direct Object Reference)
 - ✅ Aplicado automaticamente em todas as ações de objeto (`retrieve`, `update`, `destroy`)
-- ✅ Retorna `403 Forbidden` se objeto não pertence à company
+- ✅ Retorna `403 Forbidden` se objeto não pertence à workspace
 
 **Testes:**
 - ✅ 5 testes em `apps/core/tests/test_permissions.py`
@@ -59,16 +59,16 @@ SENSITIVE_FIELDS = [
 
 ### Validação de Ownership
 
-**Automático:** Todos os ViewSets que herdam de `CompanyViewSet` já têm proteção.
+**Automático:** Todos os ViewSets que herdam de `WorkspaceViewSet` já têm proteção.
 
 **Se precisar sobrescrever `permission_classes`:**
 ```python
 # ✅ CORRETO
-class MyViewSet(CompanyViewSet):
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+class MyViewSet(WorkspaceViewSet):
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
 
 # ❌ ERRADO (remove proteção)
-class MyViewSet(CompanyViewSet):
+class MyViewSet(WorkspaceViewSet):
     permission_classes = [IsAuthenticated]
 ```
 
@@ -113,7 +113,7 @@ OK
 ## 🎯 Impacto
 
 ### Antes
-- ❌ Possível acesso a objetos de outras companies (IDOR)
+- ❌ Possível acesso a objetos de outras workspaces (IDOR)
 - ❌ Dados sensíveis podiam ser logados acidentalmente
 - ❌ Sem validação explícita de ownership
 
@@ -129,11 +129,14 @@ OK
 Os 4 itens "projetados" da análise podem ser implementados quando necessário:
 
 1. **Sanitização de Input** - Padrão documentado, implementar quando necessário
-2. **Validação Company Header** - Validação de formato implementada, cache pode ser adicionado depois
+2. **Validação Workspace Header** - Validação de formato implementada, cache pode ser adicionado depois
 3. **Mass Assignment Prevention** - Convenção documentada, seguir em novos serializers
 4. **Query Params Validation** - Anti-pattern documentado, seguir em novos ViewSets
 
 ---
 
 **Status Final:** ✅ 2 itens críticos implementados e testados!
+
+
+
 

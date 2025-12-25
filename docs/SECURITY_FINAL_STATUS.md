@@ -8,7 +8,7 @@
 ## ✅ Implementado (3 itens críticos)
 
 ### 1. Validação Explícita de Ownership (IDOR Prevention)
-- ✅ `CompanyObjectPermission` implementado
+- ✅ `WorkspaceObjectPermission` implementado
 - ✅ Aplicado em todos os ViewSets
 - ✅ Testes criados e passando
 - **Arquivo:** `apps/core/permissions.py`
@@ -19,7 +19,7 @@
 - ✅ 15+ campos sensíveis protegidos
 - **Arquivo:** `apps/core/logging.py`
 
-### 3. Validação de Formato do Company Header
+### 3. Validação de Formato do Workspace Header
 - ✅ Validação de formato implementada
 - ✅ Previne enumeração e queries maliciosas
 - ✅ Testes criados e passando
@@ -47,7 +47,7 @@
 
 ## ⏸️ Opcional (1 item)
 
-### 7. Cache do Company Header Lookup
+### 7. Cache do Workspace Header Lookup
 - ⏸️ Pode ser adicionado depois
 - **Quando:** Antes de escalar para alto tráfego
 - **Custo:** Médio
@@ -76,15 +76,18 @@
 O bootstrap agora tem:
 - ✅ Proteção contra IDOR (validação explícita de ownership)
 - ✅ Proteção contra vazamento de dados em logs
-- ✅ Proteção contra enumeração de companies
+- ✅ Proteção contra enumeração de workspaces
 - ✅ Documentação completa para manutenção por LLMs
 
 **Próximos passos (opcionais):**
 - Implementar sanitização de input quando necessário
-- Adicionar cache de company lookup se performance for problema
+- Adicionar cache de workspace lookup se performance for problema
 - Manter disciplina nos padrões documentados
 
 ---
 
 **Status Final:** ✅ **Pronto para uso e manutenção**
+
+
+
 

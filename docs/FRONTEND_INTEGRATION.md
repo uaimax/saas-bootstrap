@@ -97,12 +97,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.meusite.com';
 ### Frontend (a implementar)
 - [ ] Criar projeto React + Vite + TypeScript
 - [ ] Configurar Tailwind CSS
-- [ ] Instalar e configurar shadcn/ui
+- [ ] Instalar e configurar componentes UI
 - [ ] Configurar variável `VITE_API_URL`
 - [ ] Criar cliente HTTP (axios/fetch) usando `API_URL`
 - [ ] Nunca hardcodar URLs da API
 - [ ] Usar variáveis de ambiente
-- [ ] Configurar tema do shadcn/ui (cores, dark mode opcional)
+- [ ] Configurar tema (cores, dark mode opcional)
 
 ## Exemplo de Configuração Frontend
 
@@ -120,8 +120,8 @@ npm install
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 
-# 4. Instalar shadcn/ui
-npx shadcn-ui@latest init
+# 4. Configurar Componentes UI
+# Componentes UI customizados já estão configurados
 
 # 5. Instalar cliente HTTP (opcional)
 npm install axios
@@ -153,10 +153,10 @@ export const apiClient = axios.create({
 });
 ```
 
-#### `frontend/components.json` (gerado pelo shadcn/ui)
+#### `frontend/components.json` (configuração de componentes UI)
 ```json
 {
-  "$schema": "https://ui.shadcn.com/schema.json",
+  "$schema": "https://json.schemastore.org/package.json",
   "style": "default",
   "rsc": false,
   "tsx": true,
@@ -173,18 +173,10 @@ export const apiClient = axios.create({
 }
 ```
 
-### Adicionar Componentes shadcn/ui
+### Componentes UI Disponíveis
 
-```bash
-# Exemplos de componentes úteis para SaaS
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add input
-npx shadcn-ui@latest add form
-npx shadcn-ui@latest add table
-npx shadcn-ui@latest add dialog
-npx shadcn-ui@latest add dropdown-menu
-npx shadcn-ui@latest add toast
-```
+Componentes UI customizados já estão disponíveis em `src/components/ui/`:
+- button, input, form, table, dialog, dropdown-menu, toast, etc.
 
 ## Problemas Comuns a Evitar
 
@@ -222,7 +214,7 @@ CORS_ENABLED = os.environ.get("CORS_ENABLED", "False") == "True"
 - **Vite** - Build tool e dev server
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utilitários CSS
-- **shadcn/ui** - Componentes UI (copy-paste, customizável)
+- **Componentes UI Customizados** - Componentes UI (customizáveis)
 
 ### Bibliotecas Complementares
 - **React Query** (opcional) - Cache e sincronização de dados
@@ -230,7 +222,7 @@ CORS_ENABLED = os.environ.get("CORS_ENABLED", "False") == "True"
 - **Zod** (opcional) - Validação de schemas
 - **axios** ou **fetch** - Cliente HTTP
 
-### Por que shadcn/ui?
+### Por que Componentes UI Customizados?
 - ✅ Componentes prontos para SaaS (forms, tables, dialogs)
 - ✅ Código mínimo (menos CSS manual)
 - ✅ Totalmente customizável (você possui o código)
@@ -241,7 +233,7 @@ CORS_ENABLED = os.environ.get("CORS_ENABLED", "False") == "True"
 ## Próximos Passos
 
 1. **Fase 4:** Implementar frontend React + Vite + TypeScript
-2. **Configurar:** shadcn/ui e Tailwind CSS
+2. **Configurar:** Componentes UI e Tailwind CSS
 3. **Configurar:** Variáveis de ambiente no frontend
 4. **Criar:** Cliente HTTP usando `API_URL`
 5. **Testar:** Integração backend ↔ frontend

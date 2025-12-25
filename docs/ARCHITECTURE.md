@@ -69,7 +69,7 @@ backend/
 ├── config/          # Projeto Django (settings, urls, celery)
 └── ...
 
-frontend/             # React SPA + shadcn/ui (Fase 4)
+frontend/             # React SPA + Tailwind CSS (Fase 4)
 ```
 
 **Importante:** Código frontend nunca no backend, código backend nunca no frontend.
@@ -97,12 +97,12 @@ urlpatterns = [
 
 ### 7. Soft Deletes
 
-**Implementação:** Todos os models base (`CompanyModel`, `BaseModel`) incluem soft delete.
+**Implementação:** Todos os models base (`WorkspaceModel`, `BaseModel`) incluem soft delete.
 
 ```python
-from apps.core.models import CompanyModel
+from apps.core.models import WorkspaceModel
 
-class MeuModel(CompanyModel):
+class MeuModel(WorkspaceModel):
     # Herda automaticamente deleted_at e métodos soft_delete()/restore()
     pass
 ```
@@ -114,7 +114,7 @@ class MeuModel(CompanyModel):
 - `only_deleted()`: Apenas registros deletados
 
 **ViewSets:**
-- `CompanyViewSet.destroy()` realiza soft delete automaticamente
+- `WorkspaceViewSet.destroy()` realiza soft delete automaticamente
 - Registros não são removidos do banco, apenas marcados com `deleted_at`
 
 **Benefícios:**
@@ -124,12 +124,12 @@ class MeuModel(CompanyModel):
 
 ### 8. UUIDs como Primary Keys
 
-**Models críticos usam UUID:** `Company`, `User`, `AuditLog`
+**Models críticos usam UUID:** `Workspace`, `User`, `AuditLog`
 
 ```python
 from apps.core.models import UUIDPrimaryKeyMixin
 
-class Company(UUIDPrimaryKeyMixin, models.Model):
+class Workspace(UUIDPrimaryKeyMixin, models.Model):
     # id é UUID automaticamente
     pass
 ```
@@ -186,18 +186,18 @@ celery -A config beat -l info
 from apps.core.cache import cache_get_or_set, get_cache_key
 
 # Exemplo de uso
-def get_user_profile(user_id, company_id):
-    key = get_cache_key("user_profile", user_id, company_id=company_id)
+def get_user_profile(user_id, workspace_id):
+    key = get_cache_key("user_profile", user_id, workspace_id=workspace_id)
     return cache_get_or_set(
         key,
         lambda: User.objects.get(id=user_id),
         timeout=300,  # 5 minutos
-        company_id=company_id,
+        workspace_id=workspace_id,
     )
 ```
 
 **Características:**
-- Isolamento por tenant (chaves incluem `company_id`)
+- Isolamento por tenant (chaves incluem `workspace_id`)
 - Timeout configurável via `CACHE_DEFAULT_TIMEOUT`
 - Fallback graceful se Redis cair (`IGNORE_EXCEPTIONS=True`)
 - Compressão automática para economizar memória
@@ -213,10 +213,10 @@ def get_user_profile(user_id, company_id):
 ```python
 # Em ViewSet específico
 from rest_framework.throttling import UserRateThrottle
-from apps.core.throttles import CompanyRateThrottle
+from apps.core.throttles import WorkspaceRateThrottle
 
 class MyViewSet(viewsets.ModelViewSet):
-    throttle_classes = [CompanyRateThrottle]
+    throttle_classes = [WorkspaceRateThrottle]
     throttle_scope = 'custom'  # Opcional
 ```
 
@@ -230,7 +230,7 @@ API_THROTTLE_ANON=100/hour
 API_THROTTLE_USER=1000/hour
 ```
 
-**Throttle customizado:** `CompanyRateThrottle` em `apps/core/throttles.py` permite diferentes limites por company (útil para planos diferentes).
+**Throttle customizado:** `WorkspaceRateThrottle` em `apps/core/throttles.py` permite diferentes limites por workspace (útil para planos diferentes).
 
 ### 12. Logging Estruturado
 
@@ -262,9 +262,77 @@ import logging
 logger = logging.getLogger('apps')
 logger.info("Operação realizada", extra={
     "user_id": user.id,
-    "company_id": company.id,
+    "workspace_id": workspace.id,
 })
 ```
+
+### 13. Sistema de Logging Híbrido (Sentry/GlitchTip + Banco)
+
+**Configuração:** Sistema que usa Sentry ou GlitchTip quando configurado, ou banco de dados como fallback.
+
+**Funcionamento:**
+- **Se Sentry/GlitchTip configurado**: Todos os logs vão para Sentry (SaaS) ou GlitchTip (self-hosted)
+- **Se NÃO configurado**: Logs são salvos no banco via `ApplicationLog`
+
+**Suporte a GlitchTip:**
+- GlitchTip é uma alternativa open-source ao Sentry
+- Compatível com a API do Sentry (usa os mesmos SDKs)
+- Funciona com self-hosted ou instância hospedada
+- Configure o DSN do GlitchTip no lugar do DSN do Sentry
+
+**Backend:**
+```python
+from apps.core.services.error_logger import log_error
+
+# Log automático via middleware (exceções não tratadas)
+# Ou manual:
+log_error(
+    level="ERROR",
+    message="Erro ao processar",
+    error_type="ValueError",
+    stack_trace=traceback.format_exc(),
+    request=request,
+)
+```
+
+**Frontend:**
+```typescript
+import { logError } from "./lib/error-logger";
+
+// Log manual
+logError(new Error("Algo deu errado"), { userId: "123" });
+
+// Log automático: window.onerror e unhandledrejection já capturados
+```
+
+**Configuração via `.env`:**
+```bash
+# Backend
+USE_SENTRY=false        # true para usar Sentry ou GlitchTip
+SENTRY_DSN=             # DSN do Sentry ou GlitchTip (se USE_SENTRY=true)
+LOG_RETENTION_DAYS=7    # Dias de retenção no banco (padrão: 7)
+
+# Frontend
+VITE_SENTRY_DSN=        # DSN do Sentry (opcional)
+```
+
+**Características:**
+- Captura automática de erros (frontend e backend)
+- Multi-tenancy nativo (isolamento por workspace)
+- Rate limiting no endpoint (100 logs/hora)
+- Cleanup automático de logs antigos (task Celery)
+- Batching no frontend (envia em lotes)
+
+**Endpoints:**
+- `POST /api/v1/logs/frontend/` - Recebe logs do frontend
+
+**Model:** `ApplicationLog` em `apps/core/models.py`
+
+**Service:** `apps/core/services/error_logger.py` - Lógica híbrida
+
+**Middleware:** `ErrorLoggingMiddleware` - Captura exceções Django automaticamente
+
+**Task Celery:** `cleanup_old_logs` - Remove logs > 7 dias (executa diariamente às 2h)
 
 ## Migração: Junto → Separado
 
@@ -320,27 +388,27 @@ logger.info("Operação realizada", extra={
 
 ### 13. Validação de Ownership (IDOR Prevention)
 
-**Implementação:** `CompanyObjectPermission` em `apps/core/permissions.py`
+**Implementação:** `WorkspaceObjectPermission` em `apps/core/permissions.py`
 
-**Proteção:** Previne acesso a objetos de outras companies (IDOR - Insecure Direct Object Reference).
+**Proteção:** Previne acesso a objetos de outros workspaces (IDOR - Insecure Direct Object Reference).
 
-**Uso automático:** Todos os ViewSets que herdam de `CompanyViewSet` já incluem esta validação.
+**Uso automático:** Todos os ViewSets que herdam de `WorkspaceViewSet` já incluem esta validação.
 
 **Se sobrescrever `permission_classes`:**
 ```python
-# ✅ CORRETO: Incluir CompanyObjectPermission
-class MyViewSet(CompanyViewSet):
-    permission_classes = [IsAuthenticated, CompanyObjectPermission]
+# ✅ CORRETO: Incluir WorkspaceObjectPermission
+class MyViewSet(WorkspaceViewSet):
+    permission_classes = [IsAuthenticated, WorkspaceObjectPermission]
 
-# ❌ ERRADO: Remover CompanyObjectPermission
-class MyViewSet(CompanyViewSet):
+# ❌ ERRADO: Remover WorkspaceObjectPermission
+class MyViewSet(WorkspaceViewSet):
     permission_classes = [IsAuthenticated]  # Remove proteção!
 ```
 
 **Como funciona:**
-- Valida explicitamente que `obj.company_id == request.company.id`
+- Valida explicitamente que `obj.workspace_id == request.workspace.id`
 - Aplicado automaticamente em `retrieve`, `update`, `partial_update`, `destroy`
-- Retorna `403 Forbidden` se objeto não pertence à company
+- Retorna `403 Forbidden` se objeto não pertence ao workspace
 
 ### 14. Filtro de Dados Sensíveis em Logs
 

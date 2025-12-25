@@ -1,17 +1,16 @@
-/** Página de callback OAuth que processa o retorno do provider e armazena o token JWT. */
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/features/auth/AuthContext';
+import { useProfile } from '@/features/auth/hooks/use-auth-queries';
+import { SEO } from '@/components/SEO';
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
+  const { refetch: refetchProfile } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,14 +27,9 @@ export default function OAuthCallback() {
 
       if (token) {
         try {
-          // Armazenar token JWT
           localStorage.setItem('access_token', token);
-
-          // Atualizar perfil do usuário
-          await refreshProfile();
-
-          // Redirecionar para dashboard
-          navigate('/dashboard');
+          await refetchProfile();
+          navigate('/admin/dashboard');
         } catch (err) {
           console.error('Erro ao processar callback:', err);
           setError('Erro ao processar autenticação. Tente novamente.');
@@ -48,11 +42,17 @@ export default function OAuthCallback() {
     };
 
     processCallback();
-  }, [searchParams, navigate, refreshProfile]);
+  }, [searchParams, navigate, refetchProfile]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <>
+        <SEO
+          title="Processando autenticação..."
+          description="Aguarde enquanto finalizamos seu login."
+          noindex={true}
+        />
+        <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Processando autenticação...</CardTitle>
@@ -65,12 +65,19 @@ export default function OAuthCallback() {
           </CardContent>
         </Card>
       </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <>
+        <SEO
+          title="Erro na autenticação"
+          description="Ocorreu um erro ao processar o login social."
+          noindex={true}
+        />
+        <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Erro na autenticação</CardTitle>
@@ -88,10 +95,9 @@ export default function OAuthCallback() {
           </CardContent>
         </Card>
       </div>
+      </>
     );
   }
 
   return null;
 }
-
-

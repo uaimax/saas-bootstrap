@@ -22,7 +22,7 @@
 
 ### Durante Code Review
 
-1. Verificar se `CompanyObjectPermission` está presente
+1. Verificar se `WorkspaceObjectPermission` está presente
 2. Verificar se `read_only_fields` está definido
 3. Verificar se query parameters são validados
 4. Verificar se não há logging de dados sensíveis
@@ -33,8 +33,8 @@
 
 ### Ao Criar Novo ViewSet
 
-- [ ] Herda de `CompanyViewSet` se precisa multi-tenancy?
-- [ ] Inclui `CompanyObjectPermission` em `permission_classes`?
+- [ ] Herda de `WorkspaceViewSet` se precisa multi-tenancy?
+- [ ] Inclui `WorkspaceObjectPermission` em `permission_classes`?
 - [ ] Query parameters são validados?
 - [ ] Não usa `.extra()` ou `.raw()` sem sanitização?
 
@@ -52,7 +52,7 @@
 
 ### Ao Trabalhar com Queries
 
-- [ ] Sempre filtra por `company` (se CompanyModel)?
+- [ ] Sempre filtra por `workspace` (se WorkspaceModel)?
 - [ ] Usa Django ORM (não SQL raw)?
 - [ ] Query parameters validados?
 
@@ -69,4 +69,7 @@
 ---
 
 **Última atualização:** 2025-12-24
+
+
+
 

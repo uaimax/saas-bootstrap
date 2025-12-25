@@ -1,30 +1,50 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "./components/theme-provider";
-import { AuthProvider } from "./features/auth/AuthContext";
+import { AuthInitializer } from "./components/AuthInitializer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "./components/ui/toaster";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
+import { queryClient } from "./lib/query-client";
 // Auth pages
 import Login from "./features/auth/pages/Login";
 import Register from "./features/auth/pages/Register";
 import OAuthCallback from "./features/auth/pages/OAuthCallback";
-// Admin pages (exemplo de uso do Admin UI Kit)
+import ForgotPassword from "./features/auth/pages/ForgotPassword";
+import ResetPassword from "./features/auth/pages/ResetPassword";
+// Admin pages
 import DashboardPage from "./features/admin/pages/DashboardPage";
-import LeadsPage from "./features/leads/pages/LeadsPage";
+import LeadsPage from "./features/admin/pages/LeadsPage";
+import LeadFormPage from "./features/admin/pages/LeadFormPage";
 import SettingsPage from "./features/admin/pages/SettingsPage";
-// Componentes genéricos de recursos
-import { ResourceFormPage } from "./features/admin/components/resources/ResourceFormPage";
-import { leadResource } from "./features/leads/config/leads";
+import DocumentsPage from "./features/admin/pages/DocumentsPage";
+
+// Componente para redirecionar /leads/:id para /admin/leads/:id
+function LeadsRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/admin/leads/${id}`} replace />;
+}
 
 function App() {
+  // Limpar apenas valores claramente inválidos (nulos/vazios) do localStorage ao iniciar
+  // NÃO validar slugs aqui - o backend valida se o slug existe e está ativo
+  // Removido: validação de localStorage não é mais necessária aqui
+  // O backend valida se o slug existe e está ativo
+
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthInitializer>
+            <BrowserRouter>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/oauth/callback" element={<OAuthCallback />} />
             <Route
               path="/"
@@ -43,7 +63,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Rotas Admin (exemplo de uso do Admin UI Kit) */}
+            {/* Rotas Admin */}
             <Route
               path="/admin"
               element={
@@ -72,7 +92,7 @@ function App() {
               path="/admin/leads/new"
               element={
                 <ProtectedRoute>
-                  <ResourceFormPage config={leadResource} />
+                  <LeadFormPage />
                 </ProtectedRoute>
               }
             />
@@ -80,7 +100,16 @@ function App() {
               path="/admin/leads/:id"
               element={
                 <ProtectedRoute>
-                  <ResourceFormPage config={leadResource} />
+                  <LeadFormPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Rota alternativa para compatibilidade */}
+            <Route
+              path="/leads/:id"
+              element={
+                <ProtectedRoute>
+                  <LeadsRedirect />
                 </ProtectedRoute>
               }
             />
@@ -92,11 +121,22 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/documents"
+              element={
+                <ProtectedRoute>
+                  <DocumentsPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
+          <Toaster />
         </BrowserRouter>
-        <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthInitializer>
+      </ThemeProvider>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
